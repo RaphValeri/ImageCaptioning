@@ -53,6 +53,7 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
         #print('Token input : ', tokens[n])
         #print('Input : ', model.llama_tokenizer.decode(tokens[n]))
         string_input = model.llama_tokenizer.decode(tokens[n])
+        string_eval = {}
         probs_t = {}
         l_n = logits[:, n, :]
         for t in temps:
@@ -68,9 +69,11 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
                 #print('Best idx : ', best_idx)
                 for i in range(n_best):
                     probs_t[model.llama_tokenizer.decode(best_idx[i])] = best_probs[i]
+                if string_input !='':
+                    string_eval[t] = probs_t
             #print('     t={} : {}'.format(t, probs_t))
         if string_input !='':
-            res[string_input] = probs_t
+            res[string_input] = string_eval
     print(res)
     with open(json_path, 'w') as f:
         json.dump(res, f)
