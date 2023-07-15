@@ -45,11 +45,13 @@ def investigate_temperature(model, test_dset, temps=[0.1, 0.8], n_best=10):
     tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
     logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
     #logits shape : (bz, nb_tokens, n_words)
-    print('Logits shape : ', logits.shape)
-    print('Nb tokens : ', logits.shape[1])
+    #print('Logits shape : ', logits.shape)
+    #print('Nb tokens : ', logits.shape[1])
+    res = {}
     for n in range(logits.shape[1]):
-        print('Token input : ', tokens[n])
-        print('String input : ', model.llama_tokenizer.decode(tokens[n]))
+        #print('Token input : ', tokens[n])
+        print('Input : ', model.llama_tokenizer.decode(tokens[n]))
+        string_input = model.llama_tokenizer.decode(tokens[n])
         probs_t = {}
         l_n = logits[:, n, :]
         for t in temps:
@@ -57,15 +59,17 @@ def investigate_temperature(model, test_dset, temps=[0.1, 0.8], n_best=10):
             if t>0:
                 probs = torch.softmax(l_n / t, dim=-1)
                 probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
-                print('Probs sorted shape : ', probs_sort.shape)
-                print('Probs idx sorted shape : ', probs_idx.shape)
+                #print('Probs sorted shape : ', probs_sort.shape)
+                #print('Probs idx sorted shape : ', probs_idx.shape)
                 best_probs = probs_sort[0, :n_best].tolist()
                 best_idx = probs_idx[0, :n_best].tolist()
-                print('Best probs : ', best_probs)
-                print('Best idx : ', best_idx)
+                #print('Best probs : ', best_probs)
+                #print('Best idx : ', best_idx)
                 for i in range(n_best):
                     probs_t[model.llama_tokenizer.decode(best_idx[i])] = best_probs[i]
-            print('t={} : {}'.format(t, probs_t))
+            print('     t={} : {}'.format(t, probs_t))
+        if string_input !='':
+            res[string_input] = probs_t
 
 
 def main(model_path : str, p_test : float, temperature : float, json_path : str):
