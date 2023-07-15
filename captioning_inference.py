@@ -43,7 +43,7 @@ def investigate_temperature(model, test_dset, temps=[0.1, 0.8], n_best=10):
     cap = test_dset.coco.imgToAnns[idx][0]['caption']
     # Get the logits
     tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
-    logits = model(torch.tensor(tokens).long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
+    logits = model(torch.tensor(tokens).cuda.long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
     #logits shape : (bz, nb_tokens, n_words)
     for n in logits.shape[1]:
         print('Token input : ', tokens[n])
