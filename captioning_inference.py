@@ -54,9 +54,9 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
         #print('Input : ', model.llama_tokenizer.decode(tokens[n]))
         string_input = model.llama_tokenizer.decode(tokens[n])
         string_eval = {}
-        probs_t = {}
         l_n = logits[:, n, :]
         for t in temps:
+            probs_t = {}
             # Investigate the use of temperature
             if t>0:
                 probs = torch.softmax(l_n / t, dim=-1)
