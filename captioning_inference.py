@@ -75,7 +75,8 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
         if string_input !='':
             res[string_input] = string_eval
     print(res)
-    with open(json_path, 'w') as f:
+    filename = '{}_{}.json'.format(json_path, idx)
+    with open(filename, 'w') as f:
         json.dump(res, f)
 
 
@@ -106,7 +107,7 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     # Evaluation on test data
     #print("PREDICTION ON TEST DATA")
     #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
-    investigate_temperature(captioning_model, test_dset, 'eval_temp_effect.json')
+    investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
 
 
 
