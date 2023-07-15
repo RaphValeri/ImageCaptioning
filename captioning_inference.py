@@ -37,6 +37,30 @@ def predict_test_data(model, test_dset, filename="evaluation.json", temperature=
         json.dump(data, f)
     print("End of prediction on test data")
 
+def investigate_temperature(model, test_dset, temps=[0.1, 0.8], n_best=10):
+    idx = test_dset.coco.getImgIds()[0]
+    img = test_dset._load_image(idx)
+    cap = test_dset.coco.imgToAnns[idx][0]['caption']
+    # Get the logits
+    tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
+    logits = model(torch.tensor(tokens).long(), model.clip_preprocess(img).unsqueeze(0), 0)
+    #logits shape : (bz, nb_tokens, n_words)
+    for n in logits.shape[1]:
+        print('Token input : ', tokens[n])
+        print('String input : ', model.llama_tokenizer.decode(tokens[n]))
+        probs_t = {}
+        for t in temps:
+            # Investigate the use of temperature
+            l_n = logits[:, n, :]
+            if t>0:
+                probs = torch.softmax(l_n / t, dim=-1)
+                probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
+                best_probs = probs_sort[:, :n_best]
+                best_idx = probs_idx[:, :n_best]
+                for i in range(n_best):
+                    probs_t[model.llama_tokenizer.decode(best_idx[:, i])] = best_probs[:, i]
+            print('t={} : {}'.format(t, probs_t))
+
 
 def main(model_path : str, p_test : float, temperature : float, json_path : str):
     print("model path : ", model_path)
@@ -63,9 +87,9 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     
     test_dset = dset.CocoCaptions(root=ROOT_val, annFile=FILE_val, transform=captioning_model.clip_preprocess)
     # Evaluation on test data
-    print("PREDICTION ON TEST DATA")
-    predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
-
+    #print("PREDICTION ON TEST DATA")
+    #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
+    investigate_temperature(captioning_model, test_dset)
 
 
 
