@@ -78,13 +78,20 @@ def main(
     generator = load(
         ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len, max_batch_size
     )
-
+    print("-------------------------")
+    print("LLaMA Model : \n {}".format(generator.model))
+    print("-------------------------")
+    #print("LLaMA Parameters : \n {}".format(list(generator.model.parameters())))
+    #print("-------------------------")
+    print("LLaMA tranformer encoder : \n {}".format(generator.model.layers))
+    print("-------------------------")
     prompts = [
         # For these prompts, the expected answer is the natural continuation of the prompt
         "I believe the meaning of life is",
         "Simply put, the theory of relativity states that ",
         "Building a website can be done in 10 simple steps:\n",
         # Few shot prompts: https://huggingface.co/blog/few-shot-learning-gpt-neo-and-inference-api
+        
         """Tweet: "I hate it when my phone battery dies."
 Sentiment: Negative
 ###

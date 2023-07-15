@@ -32,7 +32,6 @@ class CaptioningModel(nn.Module):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         clip_model, self.clip_preprocess = clip.load("ViT-B/32", device=self.device)
         self.clip_visual = clip_model.visual.to(self.device)
-        #print("Clip model in on device : ", self.clip_visual.device)
         # Freeze all their parameters
         for p in self.llama_model.parameters():
             p.requires_grad = False
@@ -43,65 +42,51 @@ class CaptioningModel(nn.Module):
         self.ca_layers = torch.nn.ModuleList()
         self.ca_norms = torch.nn.ModuleList()
         for i in range(self.nb_ca):
-            self.ca = CrossAttention(self.args)
-            self.ca_norm = RMSNorm(self.args.dim, eps=self.args.norm_eps)
-            # Enable training for its parameters
-            for p in self.ca.parameters():
-                p.requires_grad = True
-            for p in self.ca_norm.parameters():
-                p.requires_grad = True
-            self.ca_layers.append(self.ca)
-            self.ca_norms.append(self.ca_norm)
+            self.ca_layers.append(CrossAttention(self.args))
+            self.ca_norms.append(RMSNorm(self.args.dim, eps=self.args.norm_eps).to(device=self.device, dtype=torch.float))
 
 
     def forward(self, tokens, img, start_pos):
-        # Embedding 
-        verbose = False
-        _bsz, seqlen = tokens.shape
-        #print("Tokens to be embedded : ", tokens)
-        h = self.llama_model.tok_embeddings(tokens)
-        self.freqs_cis = self.freqs_cis.to(h.device)
-        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
+        with torch.autograd.enable_grad():
+            # Embedding 
+            verbose = False
+            _bsz, seqlen = tokens.shape
+            h = self.llama_model.tok_embeddings(tokens)
+            self.freqs_cis = self.freqs_cis.to(h.device)
+            freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
 
-        mask = None
-        if seqlen > 1:
-            #print("The mask is used !")
-            mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
-            mask = torch.triu(mask, diagonal=start_pos + 1).type_as(h)
-        # Compute image features
-        #print("IMAGE INSIDE : ", img)
-        #x_img = self.clip_preprocess(img).unsqueeze(0).to(device=self.device)
-        x_img = img.unsqueeze(0).to(device=self.device)
-        x_img = x_img.to(dtype=torch.half)
-        
-        x_img = self.clip_visual(x_img)
-        # Forward pass to the Transformer blocks
-        for i in range(len(self.llama_model.layers)):
-            layer = self.llama_model.layers[i]
-            if i>=(len(self.llama_model.layers)-self.nb_ca):
-                # Compute all the operation of a transformer block
-                if verbose:
-                    print("--"*15)
-                    print("iterqtion : ", i )
-                    print("h dtype : ", h.dtype)
-                # Multihead self-attention
-                h = h + layer.attention.forward(layer.attention_norm(h), start_pos, freqs_cis, mask)
-                # Cross-Attention
-                idx_ca = (len(self.llama_model.layers)-self.nb_ca) - i
-                h = h + self.ca_layers[idx_ca].forward(layer.ffn_norm(h), x_img, start_pos, freqs_cis, mask)
-                self.ca_norms[idx_ca].to(self.device)
+            mask = None
+            if seqlen > 1:
+                #print("The mask is used !")
+                mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
+                mask = torch.triu(mask, diagonal=start_pos + 1).type_as(h)
 
-                it_h = self.ca_norms[idx_ca](h)
-
-                h = h + layer.feed_forward.forward(it_h.to(dtype=torch.half))
-                print
-            else:
-                h = layer(h, start_pos, freqs_cis, mask)
-        h = self.llama_model.norm(h)
-        output = self.llama_model.output(h[:, :, :])  # only compute last logits
+            img = img.to(device=self.device, dtype=torch.half)
+            img_features = self.clip_visual(img)
+            # Forward pass to the Transformer blocks
+            for i, layer in enumerate(self.llama_model.layers):
+                if i>=(len(self.llama_model.layers)-self.nb_ca):
+                    # Compute all the operation of a transformer block
+                    if verbose:
+                        print("--"*15)
+                        print("iterqtion : ", i )
+                        print("h dtype : ", h.dtype)
+                    # Multihead self-attention
+                    h = h + layer.attention.forward(layer.attention_norm(h), start_pos, freqs_cis, mask)
+                    # Cross-Attention
+                    h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
+                    h = h + layer.feed_forward.forward(self.ca_norms[i - len(self.llama_model.layers) + self.nb_ca](h).to(dtype=torch.half))
+                else:
+                    h = layer(h, start_pos, freqs_cis, mask)
+            h = self.llama_model.norm(h)
+            output = self.llama_model.output(h[:, :, :])  # compute all logits
         return output.float()
+
     
-    def generateCap(self, img, temperature=0.8, max_gen_len=30, top_p=0.95, verbose=False):
+    def generateCap(self, img, temperature=0, max_gen_len=30, top_p=0.95, verbose=False):
+        """"
+        Generation of a caption (inference of the model)
+        """
         prompts = [""]
         bsz = len(prompts)
         prompt_tokens = [self.llama_tokenizer.encode(x, bos=True, eos=False) for x in prompts]
@@ -118,7 +103,7 @@ class CaptioningModel(nn.Module):
         start_pos = min_prompt_size
         prev_pos = 0
         for cur_pos in range(start_pos, total_len):
-            logits = self.forward(tokens[:, prev_pos:cur_pos], img, prev_pos)
+            logits = self.forward(tokens[:, 0:cur_pos], img, 0)
             logits = logits[:, -1, :]
             if verbose :
                 print("Logit : ", logits)
@@ -152,7 +137,9 @@ class CaptioningModel(nn.Module):
             except ValueError:
                 pass
             decoded.append(self.llama_tokenizer.decode(t))
-        print("Captioning model prediction : ", decoded)
+        if verbose:
+            print("Prediction t={}: {}".format(temperature, decoded))
+        return decoded
 
 
 
@@ -164,6 +151,8 @@ class CrossAttention(nn.Module):
         self.n_local_heads = args.n_heads
         self.dim = args.dim
         self.head_dim = args.dim // args.n_heads
+        self.max_seq_len = args.max_seq_len
+        self.max_batch_size = args.max_batch_size
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
         self.wq = nn.Linear(
@@ -194,22 +183,18 @@ class CrossAttention(nn.Module):
             device=self.device,
             dtype=torch.half,
         )
+        #self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1))
 
-        self.cache_k = torch.zeros(
-            (args.max_batch_size, args.max_seq_len, self.n_local_heads, self.head_dim)
-        ).cuda()
-        self.cache_v = torch.zeros(
-            (args.max_batch_size, args.max_seq_len, self.n_local_heads, self.head_dim)
-        ).cuda()
         #print("--"*15)
         #print("Dim : ", args.dim)
         #print("n_heads : ", args.n_heads)
 
 
 
-    def forward(self, x: torch.Tensor, x_img: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor],
-                adapter=None):
+    def forward(self, x: torch.Tensor, x_img: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
+
         verbose = False
+
         bsz, seqlen, _ = x.shape
         if verbose :
             print("--"*15)
@@ -219,8 +204,6 @@ class CrossAttention(nn.Module):
             print("Initial x_img shape : ", x_img.shape)
 
         # Get the query from the language features and the keys and values from the image features
-        #x_img = x_img.to(dtype=torch.float)
-        #x = x.to(dtype=torch.float)
         x_img = x_img.repeat(1, seqlen, self.dim//x_img.shape[-1]) # Repeat the visual features to match the length of the token sequence
         if verbose:
             print("Reshape x_img : ", x_img.shape)
@@ -235,17 +218,10 @@ class CrossAttention(nn.Module):
         xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
         xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
 
-        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
+        xq, _ = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis) # do not apply rotary embedding for visual features 
 
-        self.cache_k = self.cache_k.to(xq)
-        self.cache_v = self.cache_v.to(xq)
-
-        self.cache_k[:bsz, start_pos: start_pos + seqlen] = xk
-        self.cache_v[:bsz, start_pos: start_pos + seqlen] = xv
-
-        keys = self.cache_k[:bsz, : start_pos + seqlen]
-        values = self.cache_v[:bsz, : start_pos + seqlen]
-
+        keys = xk
+        values = xv
 
         xq = xq.transpose(1, 2)
         keys = keys.transpose(1, 2)
@@ -255,6 +231,7 @@ class CrossAttention(nn.Module):
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
 
+        #scores = self.gate.tanh().half()*F.softmax(scores.float(), dim=-1).type_as(xq)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
         output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
 
@@ -355,6 +332,7 @@ def main(
     print("EOS Token : ", captioning_model.llama_tokenizer.eos_id)
     print("BOS Token : ", captioning_model.llama_tokenizer.bos_id)
     print("Pad Token : ", captioning_model.llama_tokenizer.pad_id)
+    print(" 0 decoded : ", captioning_model.llama_tokenizer.decode([0]))
     print("--"*15)
 
     

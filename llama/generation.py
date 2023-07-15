@@ -53,8 +53,13 @@ class LLaMA:
             tokens[:, cur_pos] = next_token
             prev_pos = cur_pos
 
+        print("--"*15)
+        print("Tokens list : ", tokens.tolist())
+        print("--"*15)
         decoded = []
         for i, t in enumerate(tokens.tolist()):
+            print("i : ", i)
+            print("t : ", t)
             # cut to max gen len
             t = t[: len(prompt_tokens[i]) + max_gen_len]
             # cut to eos tok if any
