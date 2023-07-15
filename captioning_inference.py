@@ -59,12 +59,12 @@ def investigate_temperature(model, test_dset, temps=[0.1, 0.8], n_best=10):
                 probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
                 print('Probs sorted shape : ', probs_sort.shape)
                 print('Probs idx sorted shape : ', probs_idx.shape)
-                best_probs = probs_sort[0, :n_best]
-                best_idx = probs_idx[0, :n_best]
+                best_probs = probs_sort[0, :n_best].tolist()
+                best_idx = probs_idx[0, :n_best].tolist()
                 print('Best probs : ', best_probs)
                 print('Best idx : ', best_idx)
                 for i in range(n_best):
-                    probs_t[model.llama_tokenizer.decode(best_idx[ i])] = best_probs[i]
+                    probs_t[model.llama_tokenizer.decode(best_idx[i])] = best_probs[i]
             print('t={} : {}'.format(t, probs_t))
 
 
