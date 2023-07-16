@@ -65,7 +65,8 @@ class CaptioningModel(nn.Module):
             img_features = self.clip_visual(img)
             # Forward pass to the Transformer blocks
             for i, layer in enumerate(self.llama_model.layers):
-                if i>=(len(self.llama_model.layers)-self.nb_ca):
+                #if i>=(len(self.llama_model.layers)-self.nb_ca):
+                if i < self.nb_ca:
                     # Compute all the operation of a transformer block
                     if verbose:
                         print("--"*15)
@@ -74,8 +75,9 @@ class CaptioningModel(nn.Module):
                     # Multihead self-attention
                     h = h + layer.attention.forward(layer.attention_norm(h), start_pos, freqs_cis, mask)
                     # Cross-Attention
-                    h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
-                    h = h + layer.feed_forward.forward(self.ca_norms[i - len(self.llama_model.layers) + self.nb_ca](h).to(dtype=torch.half))
+                    #h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
+                    h = h + self.ca_layers[i].forward(layer.ffn_norm(h),img_features,start_pos, freqs_cis, mask)
+                    h = h + layer.feed_forward.forward(self.ca_norms[i](h).to(dtype=torch.half))
                 else:
                     h = layer(h, start_pos, freqs_cis, mask)
             h = self.llama_model.norm(h)
@@ -101,7 +103,6 @@ class CaptioningModel(nn.Module):
             tokens[k, : len(t)] = torch.tensor(t).long()
         input_text_mask = tokens != self.llama_tokenizer.pad_id
         start_pos = min_prompt_size
-        prev_pos = 0
         for cur_pos in range(start_pos, total_len):
             logits = self.forward(tokens[:, 0:cur_pos], img, 0)
             logits = logits[:, -1, :]
@@ -218,7 +219,7 @@ class CrossAttention(nn.Module):
         xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
         xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
 
-        xq, _ = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis) # do not apply rotary embedding for visual features 
+        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
         keys = xk
         values = xv

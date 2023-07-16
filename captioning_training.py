@@ -69,7 +69,7 @@ def preprocess_captions(target_list):
 
 
 
-def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch, scheduler=None, verbose=False) -> None:
+def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch, scheduler=None, verbose=False):
     # Turn the model in training mode
     model.train()  
     log_interval = 400
@@ -132,7 +132,7 @@ def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch
 
 
 
-def evaluate_single(model: nn.Module, img_ref, temperature=0) -> float:
+def evaluate_single(model: nn.Module, img_ref, temperature=0):
     model.eval()  # turn on evaluation mode
     with torch.no_grad():
         model.generateCap(img_ref.unsqueeze(0), temperature=temperature)

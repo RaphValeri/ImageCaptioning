@@ -105,9 +105,9 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     
     test_dset = dset.CocoCaptions(root=ROOT_val, annFile=FILE_val, transform=captioning_model.clip_preprocess)
     # Evaluation on test data
-    #print("PREDICTION ON TEST DATA")
-    #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
-    investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
+    print("PREDICTION ON TEST DATA")
+    predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
+    #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
 
 
 

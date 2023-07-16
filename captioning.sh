@@ -51,15 +51,14 @@ echo "Executing job commands, current working directory is $(pwd)"
 # REPLACE THE FOLLOWING WITH YOUR APPLICATION COMMANDS
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 echo "FINE TUNNING HYPERPARAMETERS" >> $RESULTS_DIR/test.output
-echo "1 cross attention layer without rotary embedding for visual features" >> $RESULTS_DIR/test.output
-echo "Add residual connection for cross attention" >> $RESULTS_DIR/test.output
-echo "AdamW optimizer without scheduler" >> $RESULTS_DIR/test.output
+echo "1 cross attention layer at first Transformer block" >> $RESULTS_DIR/test.output
 echo "Training on 60% of the training data and validation on 40%" >> $RESULTS_DIR/test.output
 echo "Only lower letters in the captions" >> $RESULTS_DIR/test.output
 echo "Batch size of 16" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
-torchrun --nproc_per_node 1 captioning_training.py  --loss_save_path loss_ca_ep2.npy --model_path model_params_ca_ep2.pt  >> $RESULTS_DIR/test.output
+torchrun --nproc_per_node 1 captioning_training.py  --loss_save_path loss_ca1_ep1.npy --model_path model_params_ca1_ep1.pt  >> $RESULTS_DIR/test.output
 
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep2.pt --temperature 0.0 --json_path eval_ca_ep2_t00.json >> $RESULTS_DIR/test.output
-#torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_early_stop.pt --temperature 0.2 --json_path eval_early_t02.json >> $RESULTS_DIR/test.output
-#torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_early_stop.pt --temperature 0.4 --json_path eval_early_t04.json >> $RESULTS_DIR/test.output
+for TEMP in 0.0 0.1 0.2 0.5 0.8 0.9 1 1.1
+  do
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca1_ep1.pt --p_test 0.1 --temperature $TEMP --json_path eval_ca1_ep1_t$TEMP.json >> $RESULTS_DIR/test.output
+  done
