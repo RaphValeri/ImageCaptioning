@@ -163,7 +163,7 @@ def masked_loss(preds, labels):
 
 
 
-def main(loss_save_path : str, model_path : str):
+def main(epochs : int, loss_save_path : str, model_path : str):
 
     print("loss path : ", loss_save_path)
     print("model path : ", model_path)
@@ -175,14 +175,14 @@ def main(loss_save_path : str, model_path : str):
 
     # Create dataset and dataloader
     bz = 16			# batch size
-    p_train = 0.6	# proportion of data used for training
-    p_val = 0.399	 # proportion of data used for validation
-    p_test = 0.001	 # proportion of data used for test
+    p_train = 0.8	# proportion of data used for training
+    p_val = 1 - p_train	 # proportion of data used for validation
+    #p_test = 0.001	 # proportion of data used for test
 
     #coco = COCO(FILE_train)
     cap_dset = dset.CocoCaptions(root=ROOT_train, annFile=FILE_train, transform=captioning_model.clip_preprocess)
     generator = torch.Generator().manual_seed(42)
-    train_dset, val_dset, _ = torch.utils.data.random_split(cap_dset, [p_train, p_val, p_test], generator)
+    train_dset, val_dset = torch.utils.data.random_split(cap_dset, [p_train, p_val], generator)
     # train_dset = torch.utils.data.Subset(train_dset, [i for i in range(bz)])
     # val_dset = torch.utils.data.Subset(val_dset, [i for i in range(bz)])
 
@@ -216,7 +216,7 @@ def main(loss_save_path : str, model_path : str):
     """
 
     best_val_loss = float('inf')
-    epochs = 2
+    #epochs = 2
     #criterion = masked_loss
     criterion = torch.nn.CrossEntropyLoss()
     lr = 0.0001
