@@ -51,14 +51,14 @@ echo "Executing job commands, current working directory is $(pwd)"
 # REPLACE THE FOLLOWING WITH YOUR APPLICATION COMMANDS
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 echo "FINE TUNNING HYPERPARAMETERS" >> $RESULTS_DIR/test.output
-echo "1 cross attention layer at first Transformer block" >> $RESULTS_DIR/test.output
-echo "Training on 80% of the training data and validation on 40%" >> $RESULTS_DIR/test.output
+echo "1 cross attention layer at last Transformer block" >> $RESULTS_DIR/test.output
+echo "Training on 80% of the training data and validation on 20%" >> $RESULTS_DIR/test.output
 echo "Only lower letters in the captions" >> $RESULTS_DIR/test.output
 echo "Batch size of 16" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
-torchrun --nproc_per_node 1 captioning_training.py --epochs 40 --loss_save_path loss_ca1_early.npy --model_path model_params_ca1_early.pt  >> $RESULTS_DIR/test.output
+torchrun --nproc_per_node 1 captioning_training.py --epochs 1 --loss_save_path res_files/loss_ep1_80.npy --model_path params_ep1_80.pt  >> $RESULTS_DIR/test.output
 
 for TEMP in 0.0 0.1 0.2 0.5 0.8 0.9 1 1.1
   do
-    torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca1_early.pt --p_test 0.1 --temperature $TEMP --json_path eval_ca1_early_t$TEMP.json >> $RESULTS_DIR/test.output
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ep1_80.pt --p_test 0.1 --temperature $TEMP --json_path res_files/eval_ep1_80_t$TEMP.json >> $RESULTS_DIR/test.output
   done
