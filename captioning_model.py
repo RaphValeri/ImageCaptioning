@@ -65,8 +65,8 @@ class CaptioningModel(nn.Module):
             img_features = self.clip_visual(img)
             # Forward pass to the Transformer blocks
             for i, layer in enumerate(self.llama_model.layers):
-                #if i>=(len(self.llama_model.layers)-self.nb_ca):
-                if i < self.nb_ca:
+                if i>=(len(self.llama_model.layers)-self.nb_ca):
+                #if i < self.nb_ca:
                     # Compute all the operation of a transformer block
                     if verbose:
                         print("--"*15)
@@ -75,9 +75,9 @@ class CaptioningModel(nn.Module):
                     # Multihead self-attention
                     h = h + layer.attention.forward(layer.attention_norm(h), start_pos, freqs_cis, mask)
                     # Cross-Attention
-                    #h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
-                    h = h + self.ca_layers[i].forward(layer.ffn_norm(h),img_features,start_pos, freqs_cis, mask)
-                    h = h + layer.feed_forward.forward(self.ca_norms[i](h).to(dtype=torch.half))
+                    h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
+                    #h = h + self.ca_layers[i].forward(layer.ffn_norm(h),img_features,start_pos, freqs_cis, mask)
+                    h = h + layer.feed_forward.forward(self.ca_norms[i - len(self.llama_model.layers) + self.nb_ca](h).to(dtype=torch.half))
                 else:
                     h = layer(h, start_pos, freqs_cis, mask)
             h = self.llama_model.norm(h)
@@ -101,7 +101,7 @@ class CaptioningModel(nn.Module):
         tokens = torch.full((bsz, total_len), self.llama_tokenizer.pad_id).cuda().long()
         for k, t in enumerate(prompt_tokens):
             tokens[k, : len(t)] = torch.tensor(t).long()
-        input_text_mask = tokens != self.llama_tokenizer.pad_id
+        #input_text_mask = tokens != self.llama_tokenizer.pad_id
         start_pos = min_prompt_size
         for cur_pos in range(start_pos, total_len):
             logits = self.forward(tokens[:, 0:cur_pos], img, 0)
@@ -118,14 +118,13 @@ class CaptioningModel(nn.Module):
                 next_token = torch.argmax(logits, dim=-1)
             next_token = next_token.reshape(-1)
             # only replace token if prompt has already been generated
-            next_token = torch.where(
-                input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
-            )
+            # next_token = torch.where(
+            #     input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
+            # )
             tokens[:, cur_pos] = next_token
-            prev_pos = cur_pos
         decoded = []
         if verbose :
-            print("tokens : ", tokens.tolist())
+            print("tokensToList : ", tokens.tolist())
         for i, t in enumerate(tokens.tolist()):
             if verbose:
                 print("i : ", i)
