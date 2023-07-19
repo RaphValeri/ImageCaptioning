@@ -183,7 +183,7 @@ class CrossAttention(nn.Module):
             device=self.device,
             dtype=torch.half,
         )
-        self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1))
+        self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1)).to(device=self.device)
 
         #print("--"*15)
         #print("Dim : ", args.dim)
