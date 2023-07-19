@@ -65,7 +65,7 @@ class CaptioningModel(nn.Module):
             img_features = self.clip_visual(img)
             # Forward pass to the Transformer blocks
             for i, layer in enumerate(self.llama_model.layers):
-                if i>=(len(self.llama_model.layers)-self.nb_ca):
+                if i >= (len(self.llama_model.layers)-self.nb_ca):
                 #if i < self.nb_ca:
                     # Compute all the operation of a transformer block
                     if verbose:
@@ -101,7 +101,7 @@ class CaptioningModel(nn.Module):
         tokens = torch.full((bsz, total_len), self.llama_tokenizer.pad_id).cuda().long()
         for k, t in enumerate(prompt_tokens):
             tokens[k, : len(t)] = torch.tensor(t).long()
-        #input_text_mask = tokens != self.llama_tokenizer.pad_id
+        input_text_mask = tokens != self.llama_tokenizer.pad_id
         start_pos = min_prompt_size
         for cur_pos in range(start_pos, total_len):
             logits = self.forward(tokens[:, 0:cur_pos], img, 0)
@@ -118,9 +118,9 @@ class CaptioningModel(nn.Module):
                 next_token = torch.argmax(logits, dim=-1)
             next_token = next_token.reshape(-1)
             # only replace token if prompt has already been generated
-            # next_token = torch.where(
-            #     input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
-            # )
+            next_token = torch.where(
+                input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
+            )
             tokens[:, cur_pos] = next_token
         decoded = []
         if verbose :
@@ -183,7 +183,7 @@ class CrossAttention(nn.Module):
             device=self.device,
             dtype=torch.half,
         )
-        #self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1))
+        self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1))
 
         #print("--"*15)
         #print("Dim : ", args.dim)
@@ -191,7 +191,7 @@ class CrossAttention(nn.Module):
 
 
 
-    def forward(self, x: torch.Tensor, x_img: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
+    def forward(self, x: torch.Tensor, x_img: torch.Tensor, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
 
         verbose = False
 
@@ -231,8 +231,8 @@ class CrossAttention(nn.Module):
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
 
-        #scores = self.gate.tanh().half()*F.softmax(scores.float(), dim=-1).type_as(xq)
-        scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+        scores = self.gate.tanh().half()*F.softmax(scores.float(), dim=-1).type_as(xq)
+        #scores = F.softmax(scores.float(), dim=-1).type_as(xq)
         output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
 
 
