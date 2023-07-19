@@ -191,7 +191,7 @@ class CrossAttention(nn.Module):
 
 
 
-    def forward(self, x: torch.Tensor, x_img: torch.Tensor, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
+    def forward(self, x: torch.Tensor, x_img: torch.Tensor, start_pos : int, freqs_cis: torch.Tensor, mask: Optional[torch.Tensor]):
 
         verbose = False
 
