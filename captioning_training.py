@@ -164,7 +164,7 @@ def masked_loss(preds, labels):
 
 
 def main(epochs : int, loss_save_path : str, model_path : str):
-
+    print("epochs : ", epochs)
     print("loss path : ", loss_save_path)
     print("model path : ", model_path)
 
