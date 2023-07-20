@@ -205,15 +205,15 @@ def main(epochs : int, loss_save_path : str, model_path : str):
     print("Tokens : ", tokens)
     print("\n")
     print("Labels : ", label)
-
+    """
     print("--"*15)
     print("Trainable parameters : ", sum(p.numel() for p in captioning_model.parameters() if p.requires_grad))
     print("Total number of parameters : ", sum(p.numel() for p in captioning_model.parameters()))
     print("--"*15)
 
-    summary(captioning_model, [train_tokens, train_features], start_pos=0)
+    #summary(captioning_model, [train_tokens, train_features], start_pos=0)
     
-    """
+
 
     best_val_loss = float('inf')
     #epochs = 2

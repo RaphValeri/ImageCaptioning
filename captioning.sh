@@ -51,15 +51,17 @@ echo "Executing job commands, current working directory is $(pwd)"
 # REPLACE THE FOLLOWING WITH YOUR APPLICATION COMMANDS
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 echo "FINE TUNNING HYPERPARAMETERS" >> $RESULTS_DIR/test.output
-echo "1 cross attention layer at last Transformer block" >> $RESULTS_DIR/test.output
-echo "Added a gate to use or not the cross-attention" >> $RESULTS_DIR/test.output
+echo "2 cross attention layer at last Transformer block" >> $RESULTS_DIR/test.output
+#echo "Added a gate to use or not the cross-attention" >> $RESULTS_DIR/test.output
 echo "Training on 80% of the training data and validation on 20%" >> $RESULTS_DIR/test.output
 echo "Only lower letters in the captions" >> $RESULTS_DIR/test.output
 echo "Batch size of 16" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
-torchrun --nproc_per_node 1 captioning_training.py --epochs 65 --loss_save_path res_files/loss_gate_early.npy --model_path params_early_gate.pt  >> $RESULTS_DIR/test.output
 
-for TEMP in 0.0 0.1 0.2 0.3 0.4 0.5 0.8 0.9 1
+torchrun --nproc_per_node 1 captioning_training.py --epochs 1 --loss_save_path res_files/2ca_ep1/loss_2ca_ep1.npy --model_path params_2ca_ep1.pt  >> $RESULTS_DIR/test.output
+torchrun --nproc_per_node 1 captioning_training.py --epochs 2 --loss_save_path res_files/2ca_ep2/loss_2ca_ep2.npy --model_path params_2ca_ep2.pt  >> $RESULTS_DIR/test.output
+for TEMP in 0.0 0.1 0.2 0.3
   do
-    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_early_gate.pt --p_test 0.1 --temperature $TEMP --json_path res_files/eval_early_gate_t$TEMP.json >> $RESULTS_DIR/test.output
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep1/eval_2ca_ep1_t$TEMP.json >> $RESULTS_DIR/test.output
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep2.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep2/eval_2ca_ep2_t$TEMP.json >> $RESULTS_DIR/test.output
   done
