@@ -51,16 +51,12 @@ echo "Executing job commands, current working directory is $(pwd)"
 # REPLACE THE FOLLOWING WITH YOUR APPLICATION COMMANDS
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 echo "INFERENCE" >> $RESULTS_DIR/test.output
-echo "Temperature = 0, 0.2, 0.4" >> $RESULTS_DIR/test.output
+echo "Temperature = 0, ..., 1.1" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 
 
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep1.pt --p_test 0.1 --temperature 0.1 --json_path eval_ca_ep1_t01.json >> $RESULTS_DIR/test.output
-
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep1.pt --p_test 0.1 --temperature 0.2 --json_path eval_ca_ep1_t02.json >> $RESULTS_DIR/test.output
-
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep1.pt --p_test 0.1 --temperature 0.3 --json_path eval_ca_ep1_t03.json >> $RESULTS_DIR/test.output
-
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep1.pt --p_test 0.1 --temperature 0.4 --json_path eval_ca_ep1_t04.json >> $RESULTS_DIR/test.output
-
-torchrun --nproc_per_node 1 captioning_inference.py --model_path model_params_ca_ep1.pt --p_test 0.1 --temperature 0.5 --json_path eval_ca_ep1_t05.json >> $RESULTS_DIR/test.output
+for TEMP in 0.0 0.1 0.2 0.5 0.8 0.9 1 1.1
+  do
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep1/eval_2ca_ep1_t$TEMP.json >> $RESULTS_DIR/test.output
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep2.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep2/eval_2ca_ep2_t$TEMP.json >> $RESULTS_DIR/test.output
+  done

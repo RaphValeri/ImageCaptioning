@@ -169,8 +169,8 @@ def main(epochs : int, loss_save_path : str, model_path : str):
     print("model path : ", model_path)
 
     #Path to the coco caption dataset (train part)
-    ROOT_train = "/users/rv2018/files/MScProject/data/img/train2014/train2014"
-    FILE_train = "/users/rv2018/files/MScProject/data/annotations/annotations/captions_train2014.json"
+    ROOT_train = "/users/rv2018/archive/data/img/train2014/train2014"
+    FILE_train = "/users/rv2018/archive/data/annotations/annotations/captions_train2014.json"
 
 
     # Create dataset and dataloader

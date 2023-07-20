@@ -99,8 +99,8 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     captioning_model.load_state_dict(torch.load(model_path))
 
     #Path to the coco caption dataset (val part)
-    ROOT_val = "/users/rv2018/files/MScProject/data/img/train2014/val2014"
-    FILE_val = "/users/rv2018/files/MScProject/data/annotations/annotations/captions_val2014.json"
+    ROOT_val = "/users/rv2018/archive/data/img/train2014/val2014"
+    FILE_val = "/users/rv2018/archive/data/annotations/annotations/captions_val2014.json"
 
     
     test_dset = dset.CocoCaptions(root=ROOT_val, annFile=FILE_val, transform=captioning_model.clip_preprocess)
