@@ -1,40 +1,38 @@
-import torch.nn as nn
-from pycocotools.coco import COCO
 import torch
 import sys
 import time
 import numpy as np
 import fire
-import random
-from tempfile import TemporaryDirectory
 import json
-
-import torchvision.datasets as dset 
-from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
-from torchsummary import summary
-
-from torch import autograd
-
+import torchvision.datasets as dset
 from captioning_model import CaptioningModel, setup_model_parallel
 import os
-import cv2
-from PIL import Image
-import math
+
 
 
 def predict_test_data(model, test_dset, filename="evaluation.json", temperature=0.6, p_test=1):
     data = []
+    inf_time = []
     for i in range(int(p_test*len(test_dset.coco.getImgIds()))):
         if i in [int(0.1*j*p_test*len(test_dset.coco.getImgIds())) for j in range(1, 10)]:
             print("Inference {}/{} ...".format(i, int(p_test*len(test_dset.coco.getImgIds()))))
+        # Prediction
         idx = test_dset.coco.getImgIds()[i]
         img = test_dset._load_image(idx)
+        t0 = time.time()
         pred = model.generateCap(model.clip_preprocess(img).unsqueeze(0), temperature)
+        # Store data
+        tf = time.time() - t0
+        inf_time.append(tf)
         data_i = {"image_id":idx, "caption":pred[0]}
         data.append(data_i)
+    # Store the predicted captions in a json file
     with open(filename, 'w') as f:
         json.dump(data, f)
+    # Store the inference times in a npy file
+    time_path = filename.split('.json')[0] + 'inference_time.npy'
+    with open(time_path, 'wb') as f:
+        np.save(f, np.array(inf_time))
     print("End of prediction on test data")
 
 def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0.7, 0.9], n_best=5):
