@@ -38,7 +38,7 @@ class CaptioningModel(nn.Module):
         for p in self.clip_visual.parameters():
             p.requires_grad = False
         # Create a list with the custom layers of cross attention
-        self.nb_ca = 2
+        self.nb_ca = 3
         self.ca_layers = torch.nn.ModuleList()
         self.ca_norms = torch.nn.ModuleList()
         for i in range(self.nb_ca):

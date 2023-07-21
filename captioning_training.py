@@ -1,25 +1,15 @@
 import torch.nn as nn
-from pycocotools.coco import COCO
 import torch
 import sys
 import time
 import numpy as np
 import random
 from tempfile import TemporaryDirectory
-import json
-
 import torchvision.datasets as dset 
 from torch.utils.data import DataLoader
-import torchvision.transforms as transforms
-from torchsummary import summary
-import fire 
-
-from torch import autograd
-
+import fire
 from captioning_model import CaptioningModel, setup_model_parallel
 import os
-import cv2
-from PIL import Image
 import math
 
 
@@ -29,7 +19,7 @@ def custom_collate(batch):
 
     """
     img = torch.stack([item[0] for item in batch])
-    # Randomly select one caption from the ground thruth captions
+    # Randomly select one caption from the ground truth captions
     target = [item[1][random.randint(0, len(item[1])-1)] for item in batch]  
     tokens, labels = preprocess_captions(target)
     return img, tokens[:, :-1], labels[:, 1:]
