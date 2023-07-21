@@ -93,7 +93,7 @@ def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch
         loss.backward()
 
         # Clip the gradient
-        #torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, model.parameters()), 1)
+        torch.nn.utils.clip_grad_norm_(filter(lambda p: p.requires_grad, model.parameters()), 1)
 
         # Update the weights
         optimizer.step()
