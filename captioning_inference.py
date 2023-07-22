@@ -167,8 +167,8 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
     #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
     #get_attention_scores(captioning_model, test_dset, json_path)
-    img_path = './img_test/img_test_20230722_182015.jpg'
-    for t in [0, 0.1, 0.2, 0.4]:
+    img_path = './img_test/20230722_183856.jpg'
+    for t in [0.0, 0.1, 0.2, 0.4]:
         inference(img_path, captioning_model, t)
 
 
