@@ -38,7 +38,7 @@ class CaptioningModel(nn.Module):
         for p in self.clip_visual.parameters():
             p.requires_grad = False
         # Create a list with the custom layers of cross attention
-        self.nb_ca = 3
+        self.nb_ca = 2
         self.ca_layers = torch.nn.ModuleList()
         self.ca_norms = torch.nn.ModuleList()
         for i in range(self.nb_ca):
@@ -183,6 +183,7 @@ class CrossAttention(nn.Module):
             device=self.device,
             dtype=torch.half,
         )
+        self.score = None
         #self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1)).to(device=self.device)
 
         #print("--"*15)
@@ -232,8 +233,8 @@ class CrossAttention(nn.Module):
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
 
         #scores = self.gate.tanh().half()*F.softmax(scores.float(), dim=-1).type_as(xq)
-        scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
+        self.scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+        output = torch.matmul(self.scores, values)  # (bs, n_local_heads, slen, head_dim)
 
 
         output = output.transpose(

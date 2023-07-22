@@ -78,6 +78,21 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
         json.dump(res, f)
 
 
+def get_attention_scores(model, test_dset, json_path):
+    idx = test_dset.coco.getImgIds()[0]
+    print('IMAGE IDX : {}'.format(idx))
+    img = test_dset._load_image(idx)
+    cap = test_dset.coco.imgToAnns[idx][0]['caption']
+    # Get the logits
+    tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
+    logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
+    ca_scores = model.ca_layers[-1].scores
+    print('CA scores shape : ', ca_scores.shape)
+    print('CA scores : \n', ca_scores)
+
+
+
+
 def main(model_path : str, p_test : float, temperature : float, json_path : str):
     print("model path : ", model_path)
     print("temperature : ", temperature)
@@ -103,9 +118,10 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     
     test_dset = dset.CocoCaptions(root=ROOT_val, annFile=FILE_val, transform=captioning_model.clip_preprocess)
     # Evaluation on test data
-    print("PREDICTION ON TEST DATA")
-    predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
+    #print("PREDICTION ON TEST DATA")
+    #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
     #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
+    get_attention_scores(captioning_model, test_dset, json_path)
 
 
 
