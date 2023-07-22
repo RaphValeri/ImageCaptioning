@@ -59,7 +59,7 @@ def preprocess_captions(target_list):
 
 
 
-def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, epoch, scheduler=None, verbose=False):
+def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch, scheduler=None, verbose=False):
     # Turn the model in training mode
     model.train()  
     log_interval = 400
@@ -75,6 +75,7 @@ def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, epoch, sc
 
         # Get the images and tokenized captions for the batch
         img_batch, tokens, labels = batch[0], batch[1], batch[2]
+
 
         prev_pos = 0
         # Compute the prediciton of the model
@@ -144,6 +145,13 @@ def evaluate(model: nn.Module, val_dataloader, loss_fct) -> float:
 
 
 
+def masked_loss(preds, labels):
+
+    loss = torch.nn.functional.cross_entropy(preds.permute(0,2,1), labels)
+
+    return loss
+
+
 
 def main(epochs : int, loss_save_path : str, model_path : str):
     print("epochs : ", epochs)
@@ -207,8 +215,8 @@ def main(epochs : int, loss_save_path : str, model_path : str):
         for epoch in range(1, epochs + 1):
             # print('start')
             epoch_start_time = time.time()
-            loss_e = train(captioning_model, optimizer, train_dataloader, criterion, lr, epoch)
-            val_loss = evaluate(captioning_model, val_dataloader, criterion)
+            loss_e = train(captioning_model, optimizer, train_dataloader, criterion, lr, bz, epoch, scheduler=None)
+            val_loss = evaluate(captioning_model, val_dataloader, masked_loss)
             val_ppl = math.exp(val_loss)
             elapsed = time.time() - epoch_start_time
             loss_train.append(loss_e)
