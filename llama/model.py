@@ -108,6 +108,7 @@ class Attention(nn.Module):
             input_is_parallel=True,
             init_method=lambda x: x,
         )
+        self.score = None
 
         #self.cache_k = torch.zeros(
             #(args.max_batch_size, args.max_seq_len, self.n_local_heads, self.head_dim)
@@ -139,8 +140,8 @@ class Attention(nn.Module):
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
-        scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
+        self.scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+        output = torch.matmul(self.scores, values)  # (bs, n_local_heads, slen, head_dim)
         output = output.transpose(
             1, 2
         ).contiguous().view(bsz, seqlen, -1)
