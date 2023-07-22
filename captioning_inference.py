@@ -79,6 +79,24 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
         json.dump(res, f)
 
 
+def get_scores():
+    ca_scores = model.ca_layers[-1].scores_att
+    ca_scores = einops.reduce(ca_scores, 'batch heads sequence img_features -> sequence img_features',
+                              reduction='mean')
+
+    # print('CA scores shape : ', ca_scores.shape)
+    # print('CA scores : \n', ca_scores)
+
+    attention_scores = model.llama_model.layers[-1].attention.scores_att
+    attention_scores = einops.reduce(attention_scores, 'batch heads sequence img_features -> sequence img_features',
+                                     reduction='mean')
+
+    # print('A scores shape : ', ca_scores.shape)
+    # print('A scores : \n', ca_scores)
+    res = {'cross_attention': ca_scores.detach().cpu().tolist(),
+           'self_attention': attention_scores.detach().cpu().tolist()}
+
+
 def get_attention_scores(model, test_dset, json_path):
     idx = test_dset.coco.getImgIds()[0]
     print('IMAGE IDX : {}'.format(idx))
@@ -89,15 +107,15 @@ def get_attention_scores(model, test_dset, json_path):
     #print("Tokens len : ", len(tokens))
     #print("tokens : ", tokens)
     logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
-    ca_scores = model.ca_layers[-1].scores
+    ca_scores = model.ca_layers[-1].scores_att
     ca_scores = einops.reduce(ca_scores,'batch heads sequence img_features -> sequence img_features',
         reduction='mean')
 
     #print('CA scores shape : ', ca_scores.shape)
     #print('CA scores : \n', ca_scores)
 
-    attention_scores = model.llama_model.layers[-1].attention.scores
-    ca_scores = einops.reduce(attention_scores,'batch heads sequence img_features -> sequence img_features',
+    attention_scores = model.llama_model.layers[-1].attention.scores_att
+    attention_scores = einops.reduce(attention_scores,'batch heads sequence img_features -> sequence img_features',
         reduction='mean')
 
     #print('A scores shape : ', ca_scores.shape)
@@ -105,7 +123,7 @@ def get_attention_scores(model, test_dset, json_path):
     words = []
     for n in range(len(tokens)):
         words.append(model.llama_tokenizer.decode(tokens[n]))
-    res = {'cross_attention':ca_scores.detach().cpu().tolist(), 'self_attention':ca_scores.detach().cpu().tolist(), 'words':words}
+    res = {'cross_attention':ca_scores.detach().cpu().tolist(), 'self_attention':attention_scores.detach().cpu().tolist(), 'words':words}
 
     filename = '{}_{}.json'.format(json_path, idx)
     with open(filename, 'w') as f:
@@ -138,10 +156,10 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     
     test_dset = dset.CocoCaptions(root=ROOT_val, annFile=FILE_val, transform=captioning_model.clip_preprocess)
     # Evaluation on test data
-    #print("PREDICTION ON TEST DATA")
-    #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
+    print("PREDICTION ON TEST DATA")
+    predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
     #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
-    get_attention_scores(captioning_model, test_dset, json_path)
+    #get_attention_scores(captioning_model, test_dset, json_path)
 
 
 

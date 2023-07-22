@@ -55,8 +55,6 @@ echo "Temperature = 0, ..., 1.1" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 
 
-for TEMP in 0.0 0.1 0.2 0.5 0.8 0.9 1 1.1
-  do
-    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep1/eval_2ca_ep1_t$TEMP.json >> $RESULTS_DIR/test.output
-    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep2.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep2/eval_2ca_ep2_t$TEMP.json >> $RESULTS_DIR/test.output
-  done
+TEMP=0.0
+torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep1/eval_2ca_ep1_t$TEMP_test2.json >> $RESULTS_DIR/test.output
+#torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep2.pt --p_test 0.1 --temperature $TEMP --json_path res_files/2ca_ep2/eval_2ca_ep2_t$TEMP.json >> $RESULTS_DIR/test.output
