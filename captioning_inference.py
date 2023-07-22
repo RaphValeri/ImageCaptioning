@@ -7,6 +7,8 @@ import json
 import torchvision.datasets as dset
 from captioning_model import CaptioningModel, setup_model_parallel
 import os
+from PIL import Image
+import cv2
 import einops
 
 
@@ -35,6 +37,13 @@ def predict_test_data(model, test_dset, filename="evaluation.json", temperature=
     with open(time_path, 'wb') as f:
         np.save(f, np.array(inf_time))
     print("End of prediction on test data")
+
+
+def inference(img_path, model, temp):
+    img = Image.fromarray(cv2.imread(img_path))
+    cap = model.generateCap(model.clip_preprocess(img).unsqueeze(0), temp)
+    print('t={} | {}'.format(temp, cap))
+
 
 def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0.7, 0.9], n_best=5):
     idx = test_dset.coco.getImgIds()[0]
@@ -157,7 +166,10 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     #print("PREDICTION ON TEST DATA")
     #predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
     #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
-    get_attention_scores(captioning_model, test_dset, json_path)
+    #get_attention_scores(captioning_model, test_dset, json_path)
+    img_path = './img_test/img_test_20230722_182015.jpg'
+    for t in [0, 0.1, 0.2, 0.4]:
+        inference(img_path, captioning_model, t)
 
 
 
