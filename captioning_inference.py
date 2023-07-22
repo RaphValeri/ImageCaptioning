@@ -86,7 +86,8 @@ def get_attention_scores(model, test_dset, json_path):
     cap = test_dset.coco.imgToAnns[idx][0]['caption']
     # Get the logits
     tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
-    print("Tokens shape : ", tokens.shape)
+    print("Tokens len : ", len(tokens))
+    print("tokens : ", tokens)
     logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
     ca_scores = model.ca_layers[-1].scores
     ca_scores = einops.reduce(ca_scores,'batch heads sequence img_features -> sequence img_features',
@@ -101,7 +102,7 @@ def get_attention_scores(model, test_dset, json_path):
 
     print('A scores shape : ', ca_scores.shape)
     print('A scores : \n', ca_scores)
-   
+
 
 
 
