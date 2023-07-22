@@ -22,7 +22,7 @@ from fairscale.nn.model_parallel.initialize import initialize_model_parallel
 
 
 class CaptioningModel(nn.Module):
-    def __init__(self, ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len, max_batch_size):
+    def __init__(self, ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len, max_batch_size, nb_ca=1):
         super().__init__()
         # Get the pretrained LLaMA and CLIP models
         generator, self.args = load(ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len, max_batch_size)
@@ -38,7 +38,7 @@ class CaptioningModel(nn.Module):
         for p in self.clip_visual.parameters():
             p.requires_grad = False
         # Create a list with the custom layers of cross attention
-        self.nb_ca = 1
+        self.nb_ca = nb_ca
         self.ca_layers = torch.nn.ModuleList()
         self.ca_norms = torch.nn.ModuleList()
         for i in range(self.nb_ca):
@@ -230,9 +230,10 @@ class CrossAttention(nn.Module):
         keys = keys.transpose(1, 2)
         values = values.transpose(1, 2)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
+        #print("scores shape : ", scores.shape)
 
-        if mask is not None:
-            scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
+        # if mask is not None:
+        #     scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
 
         #scores = self.gate.tanh().half()*F.softmax(scores.float(), dim=-1).type_as(xq)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)

@@ -153,11 +153,16 @@ def masked_loss(preds, labels):
 
 
 
-def main(epochs : int, loss_save_path : str, model_path : str):
+def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
     print("epochs : ", epochs)
     print("loss path : ", loss_save_path)
     print("model path : ", model_path)
 
+    # Captioning model
+    global captioning_model
+    captioning_model = CaptioningModel(
+        ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len=512, max_batch_size=32, nb_ca=nb_ca
+    )
     #Path to the coco caption dataset (train part)
     ROOT_train = "/users/rv2018/archive/data/img/train2014/train2014"
     FILE_train = "/users/rv2018/archive/data/annotations/annotations/captions_train2014.json"
@@ -257,10 +262,6 @@ if __name__=="__main__":
     # Load the model
     ckpt_dir = "download/7B"
     tokenizer_path = "download/tokenizer.model"
-
-    captioning_model = CaptioningModel(
-        ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len=512, max_batch_size=32
-    )
 
 
     # Run the main function

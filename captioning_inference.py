@@ -9,7 +9,7 @@ from captioning_model import CaptioningModel, setup_model_parallel
 import os
 from PIL import Image
 import cv2
-import einops
+
 
 
 
@@ -138,7 +138,7 @@ def get_attention_scores(model, test_dset, json_path):
 
 
 
-def main(model_path : str, p_test : float, temperature : float, json_path : str):
+def main(model_path : str, nb_ca : int, p_test : float, temperature : float, json_path : str):
     print("model path : ", model_path)
     print("temperature : ", temperature)
     print("json path : ", json_path)
@@ -152,7 +152,7 @@ def main(model_path : str, p_test : float, temperature : float, json_path : str)
     tokenizer_path = "download/tokenizer.model"
 
     captioning_model = CaptioningModel(
-        ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len=512, max_batch_size=32
+        ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len=512, max_batch_size=32, nb_ca=nb_ca
     )
     captioning_model.load_state_dict(torch.load(model_path))
 
