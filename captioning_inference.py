@@ -102,7 +102,9 @@ def get_attention_scores(model, test_dset, json_path):
 
     #print('A scores shape : ', ca_scores.shape)
     #print('A scores : \n', ca_scores)
-    words = model.llama_tokenizer.decode(tokens)
+    words = []
+    for n in range(len(tokens)):
+        words.append(model.llama_tokenizer.decode(tokens[n]))
     res = {'cross_attention':ca_scores.detach().cpu().tolist(), 'self_attention':ca_scores.detach().cpu().tolist(), 'words':words}
 
     filename = '{}_{}.json'.format(json_path, idx)
