@@ -209,7 +209,7 @@ def main(epochs : int, loss_save_path : str, model_path : str):
     #epochs = 2
     #criterion = masked_loss
     criterion = torch.nn.CrossEntropyLoss()
-    lr = 0.00001
+    lr = 0.0001
     optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, captioning_model.parameters()), lr=lr, weight_decay=0.1, betas=(0.9, 0.95), eps=1e-04)
     #optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, captioning_model.parameters()), lr=lr, eps=1e-04)
     #scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.1*lr)
