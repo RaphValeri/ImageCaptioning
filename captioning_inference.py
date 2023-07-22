@@ -94,6 +94,12 @@ def get_attention_scores(model, test_dset, json_path):
     print('CA scores shape : ', ca_scores.shape)
     print('CA scores : \n', ca_scores)
 
+    attention_scores = model.llama_model.layers[-1].attention.scores
+    ca_scores = einops.reduce(attention_scores,'batch heads sequence img_features -> sequence img_features',
+        reduction='mean')
+
+    print('A scores shape : ', ca_scores.shape)
+    print('A scores : \n', ca_scores)
 
 
 
