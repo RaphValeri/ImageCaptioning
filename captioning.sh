@@ -62,10 +62,10 @@ for N in 1 2 3
   do
     for EP in 1 2
       do
-        torchrun --nproc_per_node 1 captioning_training.py --epochs $EP --nb_ca $N --loss_save_path res_files/w_o_mask/${N}ca_ep${EP}/loss_${N}ca_ep${EP}.npy --model_path params_wo_mask_${N}ca_ep${EP}.pt  >> $RESULTS_DIR/test.output
+        torchrun --nproc_per_node 1 captioning_training.py --epochs $EP --nb_ca $N --loss_save_path res_files/final_test/${N}ca_ep${EP}/loss_${N}ca_ep${EP}.npy --model_path params_ft_${N}ca_ep${EP}.pt  >> $RESULTS_DIR/test.output
         for TEMP in 0.0 0.1
           do
-            torchrun --nproc_per_node 1 captioning_inference.py --model_path params_wo_mask_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/${N}ca_ep${EP}/eval_wo_mask_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
+            torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ft_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/final_test/${N}ca_ep${EP}/eval_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
           done
       done
   done
