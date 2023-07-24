@@ -55,5 +55,5 @@ echo "Temperature = 0, ..., 1.1" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 
 
-torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ep1_80.pt --nb_ca 1 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/1ca_ep1/eval_1ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
+#torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ep1_80.pt --nb_ca 1 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/1ca_ep1/eval_1ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
 torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --nb_ca 2 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/2ca_ep1/eval_2ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
