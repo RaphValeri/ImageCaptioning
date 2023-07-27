@@ -274,7 +274,7 @@ class CrossAttention(nn.Module):
         print('scores shape : ', scores.shape)
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
-
+        print('scores shape : ', scores.shape)
         scores = F.softmax(scores.float(), dim=3).type_as(xq)
         print('After softmax')
         print('scores shape : ', scores.shape)
