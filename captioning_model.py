@@ -248,8 +248,8 @@ class CrossAttention(nn.Module):
         xq, xk, xv = self.wq(x), self.wk(x_img), self.wv(x_img)
 
         xq = xq.view(bsz, seqlen, self.n_local_heads, self.head_dim)
-        xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
-        xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        xk = xk.view(bsz, 1, self.n_local_heads, self.head_dim)
+        xv = xv.view(bsz, 1, self.n_local_heads, self.head_dim)
 
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
