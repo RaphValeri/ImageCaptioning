@@ -264,10 +264,10 @@ class CrossAttention(nn.Module):
         values = values.transpose(1, 2)
         print('After transpose : ')
         print('query shape : ', xq.shape)
-        print('keys shape : ', xk.shape)
-        print('values shape : ', xv.shape)
+        print('keys shape : ', keys.shape)
+        print('values shape : ', values.shape)
         print('---'*10)
-        print('transpose keys : ', xk.shape)
+        print('transpose keys : ', keys.transpose(2, 3).shape)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
 
         if mask is not None:
