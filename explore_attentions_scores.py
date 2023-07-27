@@ -19,7 +19,7 @@ def get_attention_scores(model, test_dset, json_path):
     #tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
 
     cap_pred, tokens = model.generateCap(model.clip_preprocess(img).unsqueeze(0), 0, return_tokens=True)
-
+    tokens = tokens[0]
     ca_scores = model.ca_scores.detach().cpu()
     print('Cross-attention shape : ', ca_scores.shape)
     #ca_scores = einops.reduce(ca_scores,'batch heads sequence img_features -> sequence img_features',
@@ -34,7 +34,7 @@ def get_attention_scores(model, test_dset, json_path):
     print('Tokens : ', tokens)
     words = []
     for n in range(len(tokens)):
-        if tokens[n]!=model.llama_tokenizer.eos:
+        if tokens[n]!=model.llama_tokenizer.eos_id:
             words.append(model.llama_tokenizer.decode(tokens[n]))
         else:
             break
