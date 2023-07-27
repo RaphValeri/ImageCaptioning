@@ -28,14 +28,14 @@ To train the captioning model, download the MSCOCO captions dataset, for example
 the following instructions.
 
 In the folder you want to store the images of the dataset, run:
-```
+``` bash
 wget http://images.cocodataset.org/zips/train2014.zip
 unzip train2014.zip
 rm train2014.zip
 ```
 
 In the folder you want to store the annotations of the dataset, run:
-```
+```  bash
 wget http://images.cocodataset.org/annotations/annotations_trainval2014.zip
 unzip annotations_trainval2014.zip
 rm annotations_trainval2014.zip
