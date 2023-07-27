@@ -251,7 +251,7 @@ class CrossAttention(nn.Module):
         xk = xk.view(bsz, 1, self.n_local_heads, self.head_dim)
         xv = xv.view(bsz, 1, self.n_local_heads, self.head_dim)
 
-        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
+        xq, _ = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
         keys = xk
         values = xv
