@@ -269,11 +269,15 @@ class CrossAttention(nn.Module):
         print('---'*10)
         print('transpose keys : ', keys.transpose(2, 3).shape)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
-
+        print('---')
+        print('before softmax')
+        print('scores shape : ', scores.shape)
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
 
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
+        print('After softmax')
+        print('scores shape : ', scores.shape)
         output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
 
 
