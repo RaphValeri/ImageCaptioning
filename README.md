@@ -1,23 +1,51 @@
-# LLaMA 
+# Image Captioning 
 
-This repository is intended as a minimal, hackable and readable example to load [LLaMA](https://ai.facebook.com/blog/large-language-model-llama-meta-ai/) ([arXiv](https://arxiv.org/abs/2302.13971v1)) models and run inference.
-In order to download the checkpoints and tokenizer, fill this [google form](https://forms.gle/jk851eBVbX1m5TAv5)
+This repository is an implementation of a captioning model using two pre-trained models the CLIP visual encoder and the
+LLaMA language model with 7B parameters.
+In order to download the checkpoints and tokenizer of the LLaMA model, fill this [google form](https://forms.gle/jk851eBVbX1m5TAv5).
 
 ## Setup
 
 In a conda env with pytorch / cuda available, run:
-```
-pip install -r requirements.txt
+``` bash
+$ pip install ftfy regex tqdm
+$ pip install git+https://github.com/openai/CLIP.git
+$ pip install -r requirements.txt
 ```
 Then in this repository:
-```
-pip install -e .
+``` bash
+$ pip install -e .
 ```
 
-## Download
+## Download of LLaMA checkpoints and tokenizer
 
-Once your request is approved, you will receive links to download the tokenizer and model files.
-Edit the `download.sh` script with the signed url provided in the email to download the model weights and tokenizer.
+Follow the instructions from [LLaMA official repository](https://github.com/facebookresearch/llama/tree/llama_v1) to download 
+the checkpoints and tokenizer after being approved.
+Please save these files in a '/download' folder.
+
+## Download of the MSCOCO captions dataset
+To train the captioning model, download the MSCOCO captions dataset, for example for the 2014 train split you can run
+the following instructions.
+
+In the folder you want to store the images of the dataset, run:
+```
+wget http://images.cocodataset.org/zips/train2014.zip
+unzip train2014.zip
+rm train2014.zip
+```
+
+In the folder you want to store the annotations of the dataset, run:
+```
+wget http://images.cocodataset.org/annotations/annotations_trainval2014.zip
+unzip annotations_trainval2014.zip
+rm annotations_trainval2014.zip
+```
+
+You can do the same with the 'val2014' split for inference purpose (the 'test2014' split doesn't have the annotations).
+
+Finally, edit the path toward your images and annotations in `captioning_training.py` for the training dataset and in 
+`captioning_inference.py` for the testing set.
+##  Training
 
 ## Inference
 
@@ -35,14 +63,13 @@ Different models require different MP values:
 | 33B    | 4  |
 | 65B    | 8  |
 
-## FAQ
 
-- [1. The download.sh script doesn't work on default bash in MacOS X](FAQ.md#1)
-- [2. Generations are bad!](FAQ.md#2)
-- [3. CUDA Out of memory errors](FAQ.md#3)
-- [4. Other languages](FAQ.md#4)
 
 ## Reference
+
+This fine-tuned captioning model uses two pre-trained models: the LLaMA language model and the CLIP visual encoder.
+
+
 
 LLaMA: Open and Efficient Foundation Language Models -- https://arxiv.org/abs/2302.13971
 
@@ -55,8 +82,6 @@ LLaMA: Open and Efficient Foundation Language Models -- https://arxiv.org/abs/23
 }
 ```
 
-## Model Card
-See [MODEL_CARD.md](MODEL_CARD.md)
 
 ## License
-See the [LICENSE](LICENSE) file.
+License of the LLaMA model: see the [LICENSE](LICENSE) file.
