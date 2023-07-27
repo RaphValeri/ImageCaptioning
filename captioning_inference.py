@@ -105,13 +105,12 @@ def get_attention_scores(model, test_dset, json_path):
     cap = test_dset.coco.imgToAnns[idx][0]['caption']
     # Get the logits
     tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
-    #print("Tokens len : ", len(tokens))
-    #print("tokens : ", tokens)
-    logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
-    ca_scores = model.ca_layers[-1].scores_att.detach().cpu()
+
+    cap_pred = model.generateCap(model.clip_preprocess(img).unsqueeze(0), 0)
+    ca_scores = model.ca_scores.detach().cpu()
     #ca_scores = einops.reduce(ca_scores,'batch heads sequence img_features -> sequence img_features',
 
-    attention_scores = model.llama_model.layers[-1].attention.scores_att.detach().cpu()
+    attention_scores = model.att_scores.detach().cpu()
 
     ca_map = {}
     att_map = {}
@@ -121,8 +120,11 @@ def get_attention_scores(model, test_dset, json_path):
 
     words = []
     for n in range(len(tokens)):
-        words.append(model.llama_tokenizer.decode(tokens[n]))
-    res = {'cross_attention':ca_map, 'self_attention':att_map, 'words':words}
+        if tokens[n]!=model.llama_tokenizer.eos:
+            words.append(model.llama_tokenizer.decode(tokens[n]))
+        else:
+            break
+    res = {'cross_attention':ca_map, 'self_attention':att_map, 'words':words, 'gt_cap':cap}
 
     filename = '{}_{}.json'.format(json_path, idx)
     with open(filename, 'w') as f:

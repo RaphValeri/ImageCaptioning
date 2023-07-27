@@ -2,14 +2,14 @@
 
 ################# Part-1 Slurm directives ####################
 ## Working dir
-#SBATCH -D /users/rv2018/files/MScProject/llama
+#SBATCH -D /users/rv2018/archive/ImageCaptioning
 ## Environment variables
 #SBATCH --export=ALL
 ## Output and Error Files
 #SBATCH -o job-%j.output
 #SBATCH -e job-%j.error
 ## Job name
-#SBATCH -J captioning_inference
+#SBATCH -J gpu-inference
 ## Run time: "hours:minutes:seconds", "days-hours"
 #SBATCH --time=3-20:00:00
 ## Memory limit (in megabytes). Total --mem or amount per cpu --mem-per-cpu
@@ -56,4 +56,4 @@ echo "----------------------------------" >> $RESULTS_DIR/test.output
 
 
 #torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ep1_80.pt --nb_ca 1 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/1ca_ep1/eval_1ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
-torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep1.pt --nb_ca 2 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/2ca_ep1/eval_2ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
+torchrun --nproc_per_node 1 explore_attentions_scores.py --model_path params_1ca_ep2.pt --nb_ca 1 --p_test 0.1 --temperature 0.0 --json_path res_files/get_att_scores/attention_scores_1ca_2ep.json >> $RESULTS_DIR/test.output
