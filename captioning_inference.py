@@ -11,9 +11,17 @@ from PIL import Image
 import cv2
 
 
-
-
-def predict_test_data(model, test_dset, filename="evaluation.json", temperature=0.6, p_test=1):
+def predict_test_data(model, test_dset, filename="evaluation.json", temperature=0.6, p_test=1.0):
+    """
+    Generation of the captions of images from a split of the MSCOCO captions dataset. Each caption with the ID of its
+    corresponding image will be stored in a JSON file.
+    @param model: the captioning model
+    @param test_dset: split of the MSCOCO dataset
+    @param filename: filename of the output JSON file containing all the generated captions
+    @param temperature: value of the temperature hyperparameter to be used for inference of the captioning model
+    @param p_test: proportion of the input test_dset dataset to use for inference
+    @return:
+    """
     data = []
     inf_time = []
     for i in range(int(p_test*len(test_dset.coco.getImgIds()))):
@@ -39,10 +47,18 @@ def predict_test_data(model, test_dset, filename="evaluation.json", temperature=
     print("End of prediction on test data")
 
 
-def inference(img_path, model, temp):
+def inference(img_path: str, model: CaptioningModel, temp: float) -> str:
+    """
+    Single inference of the captioning model for an image
+    @param img_path: path of the image
+    @param model: captioning model
+    @param temp: temperature value to be used during inference
+    @return: Generated caption
+    """
     img = Image.fromarray(cv2.imread(img_path))
     cap = model.generateCap(model.clip_preprocess(img).unsqueeze(0), temp)
     print('t={} | {}'.format(temp, cap))
+    return cap
 
 
 def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0.7, 0.9], n_best=5):
@@ -53,13 +69,10 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
     # Get the logits
     tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
     logits = model(torch.tensor(tokens).cuda().long().view(1, -1), model.clip_preprocess(img).unsqueeze(0), 0)
-    #logits shape : (bz, nb_tokens, n_words)
-    #print('Logits shape : ', logits.shape)
-    #print('Nb tokens : ', logits.shape[1])
+
     res = {}
     for n in range(logits.shape[1]):
-        #print('Token input : ', tokens[n])
-        #print('Input : ', model.llama_tokenizer.decode(tokens[n]))
+
         string_input = model.llama_tokenizer.decode(tokens[n])
         string_eval = {}
         l_n = logits[:, n, :]
@@ -69,41 +82,20 @@ def investigate_temperature(model, test_dset, json_path, temps=[0.1, 0.3, 0.5, 0
             if t>0:
                 probs = torch.softmax(l_n / t, dim=-1)
                 probs_sort, probs_idx = torch.sort(probs, dim=-1, descending=True)
-                #print('Probs sorted shape : ', probs_sort.shape)
-                #print('Probs idx sorted shape : ', probs_idx.shape)
+
                 best_probs = probs_sort[0, :n_best].tolist()
                 best_idx = probs_idx[0, :n_best].tolist()
-                #print('Best probs : ', best_probs)
-                #print('Best idx : ', best_idx)
+
                 for i in range(n_best):
                     probs_t[model.llama_tokenizer.decode(best_idx[i])] = best_probs[i]
-                if string_input !='':
+                if string_input != '':
                     string_eval[t] = probs_t
-            #print('     t={} : {}'.format(t, probs_t))
-        if string_input !='':
+        if string_input != '':
             res[string_input] = string_eval
     print(res)
     filename = '{}_{}.json'.format(json_path, idx)
     with open(filename, 'w') as f:
         json.dump(res, f)
-
-
-# def get_scores():
-#     ca_scores = model.ca_layers[-1].scores_att
-#     ca_scores = einops.reduce(ca_scores, 'batch heads sequence img_features -> sequence img_features',
-#                               reduction='mean')
-#
-#     # print('CA scores shape : ', ca_scores.shape)
-#     # print('CA scores : \n', ca_scores)
-#
-#     attention_scores = model.llama_model.layers[-1].attention.scores_att
-#     attention_scores = einops.reduce(attention_scores, 'batch heads sequence img_features -> sequence img_features',
-#                                      reduction='mean')
-#
-#     # print('A scores shape : ', ca_scores.shape)
-#     # print('A scores : \n', ca_scores)
-#     res = {'cross_attention': ca_scores.detach().cpu().tolist(),
-#            'self_attention': attention_scores.detach().cpu().tolist()}
 
 
 def get_attention_scores(model, test_dset, json_path):
@@ -139,6 +131,15 @@ def get_attention_scores(model, test_dset, json_path):
 
 
 def main(model_path : str, nb_ca : int, p_test : float, temperature : float, json_path : str):
+    """
+    Main function of the inference script for the captioning model
+    @param model_path: path to the weights of the fine-tuned captioning model
+    @param nb_ca: number of added cross-attention layer in the fine-tuned captioning model
+    @param p_test: proportion of the test dataset to use for inference
+    @param temperature: temperature value to be used during inference of the captioning model
+    @param json_path: path to the JSON file in which the generated captions will be stored
+    @return:
+    """
     print("model path : ", model_path)
     print("temperature : ", temperature)
     print("json path : ", json_path)

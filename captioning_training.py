@@ -16,16 +16,25 @@ import math
 def custom_collate(batch):
     """
     Custom implementation of the collate function to tokenize the captions
-
+    @param batch: batch of data from the dataloader
+    @return:  [img, tokens, labels] : the images of the batch,
+    the tokenized captions to be inputs of the captioning models,
+    and the tokenized captions to be the ground truth values in the loss computation
     """
     img = torch.stack([item[0] for item in batch])
     # Randomly select one caption from the ground truth captions
-    target = [item[1][random.randint(0, len(item[1])-1)] for item in batch]  
+    target = [item[1][random.randint(0, len(item[1])-1)] for item in batch]
+    # Pre-process the captions
     tokens, labels = preprocess_captions(target)
     return img, tokens[:, :-1], labels[:, 1:]
 
 
-def preprocess_captions(target_list):
+def preprocess_captions(target_list: list):
+    """
+    Pre-processing of the captions
+    @param target_list: list of the captions of a batch of data
+    @return: (tokens, labels)
+    """
     verbose=False
     # Clen the captions : remove dots and upper letters
     for i in range(len(target_list)):
@@ -40,14 +49,12 @@ def preprocess_captions(target_list):
 
     prompt_tokens = [captioning_model.llama_tokenizer.encode(x, bos=True, eos=True) for x in target_list]
     max_prompt_size = max([len(t) for t in prompt_tokens])
-    #total_len = min(captioning_model.args.max_seq_len, max_gen_len + max_prompt_size)
     tokens = torch.full((bsz, max_prompt_size), 0).cuda().long()
     labels = torch.full((bsz, max_prompt_size), -100).cuda().long()
     if verbose:
         print("Target list : ", target_list)
         print("Prompt tokens : ", prompt_tokens)
         print("Max prompt size : ", max_prompt_size)
-        #print("Total len : ", total_len)
     for k, t in enumerate(prompt_tokens):
         if verbose:
             print("k : ", k)
@@ -59,7 +66,18 @@ def preprocess_captions(target_list):
 
 
 
-def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch, scheduler=None, verbose=False):
+def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr: float, epoch, scheduler=None) -> float:
+    """
+    Training loop for one epoch
+    @param model: captioning model
+    @param optimizer: optimizer
+    @param train_dataloader: train dataloader
+    @param loss_fct: loss function
+    @param lr: learning rate
+    @param epoch: the epoch for this training loop
+    @param scheduler: scheduler for the learning rate if any
+    @return: the training loss value of this epoch
+    """
     # Turn the model in training mode
     model.train()  
     log_interval = 400
@@ -68,17 +86,14 @@ def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch
     loss_train = []
 
     num_batches = len(train_dataloader)
-    
-    
-    #with torch.autograd.set_detect_anomaly(True):
+
     for idx, batch in enumerate(train_dataloader):
 
         # Get the images and tokenized captions for the batch
         img_batch, tokens, labels = batch[0], batch[1], batch[2]
 
-
         prev_pos = 0
-        # Compute the prediciton of the model
+        # Compute the prediction of the model
         output = model(tokens, img_batch, prev_pos)
         if idx==0 and epoch==1:
             print("Output size : ", output.permute(0,2,1).size())
@@ -112,9 +127,7 @@ def train(model: nn.Module, optimizer, train_dataloader, loss_fct, lr, bz, epoch
                     f'loss {cur_loss:5.2f} | ppl {ppl:8.2f}')
             loss_train.append(cur_loss)
             total_loss = 0
-            start_time = time.time()	
-        
-        # print('epoch end')
+            start_time = time.time()
 
     return sum(loss_train)/len(loss_train)
         
@@ -130,6 +143,13 @@ def evaluate_single(model: nn.Module, img_ref, temperature=0):
 
 
 def evaluate(model: nn.Module, val_dataloader, loss_fct) -> float:
+    """
+    Evaluation of the loss of the captioning model on validation data
+    @param model: captioning model
+    @param val_dataloader: validation dataloader
+    @param loss_fct: loss function
+    @return: value of the validation loss
+    """
     model.eval()  # turn on evaluation mode
     total_loss = 0
     with torch.no_grad():
@@ -146,6 +166,12 @@ def evaluate(model: nn.Module, val_dataloader, loss_fct) -> float:
 
 
 def masked_loss(preds, labels):
+    """
+    Loss computation for validation data
+    @param preds: logits of the model
+    @param labels: labels
+    @return: loss
+    """
 
     loss = torch.nn.functional.cross_entropy(preds.permute(0,2,1), labels)
 
@@ -154,6 +180,13 @@ def masked_loss(preds, labels):
 
 
 def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
+    """
+    Main function of the training script of the captioning model
+    @param epochs: number of epochs
+    @param nb_ca: number of added cross-attention layers
+    @param loss_save_path: path to the npy file to save the evolution of the loss
+    @param model_path: path to save the weights of the trained captioning model
+    """
     print("epochs : ", epochs)
     print("loss path : ", loss_save_path)
     print("model path : ", model_path)
@@ -163,23 +196,22 @@ def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
     captioning_model = CaptioningModel(
         ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len=512, max_batch_size=32, nb_ca=nb_ca
     )
+
     #Path to the coco caption dataset (train part)
     ROOT_train = "/users/rv2018/archive/data/img/train2014/train2014"
     FILE_train = "/users/rv2018/archive/data/annotations/annotations/captions_train2014.json"
 
 
     # Create dataset and dataloader
-    bz = 16			# batch size
-    p_train = 0.8	# proportion of data used for training
-    p_val = 1 - p_train	 # proportion of data used for validation
-    #p_test = 0.001	 # proportion of data used for test
+    bz = 16			        # batch size
+    p_train = 0.8	        # proportion of data used for training
+    p_val = 1 - p_train	    # proportion of data used for validation
 
-    #coco = COCO(FILE_train)
+
     cap_dset = dset.CocoCaptions(root=ROOT_train, annFile=FILE_train, transform=captioning_model.clip_preprocess)
     generator = torch.Generator().manual_seed(42)
     train_dset, val_dset = torch.utils.data.random_split(cap_dset, [p_train, p_val], generator)
-    # train_dset = torch.utils.data.Subset(train_dset, [i for i in range(bz)])
-    # val_dset = torch.utils.data.Subset(val_dset, [i for i in range(bz)])
+
 
     train_dataloader = DataLoader(train_dset, batch_size=bz, shuffle=True, collate_fn=custom_collate)
     val_dataloader = DataLoader(val_dset, batch_size=bz, shuffle=True, collate_fn=custom_collate)
@@ -218,9 +250,8 @@ def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
         best_model_params_path = os.path.join(tempdir, "best_model_params.pt")
 
         for epoch in range(1, epochs + 1):
-            # print('start')
             epoch_start_time = time.time()
-            loss_e = train(captioning_model, optimizer, train_dataloader, criterion, lr, bz, epoch, scheduler=None)
+            loss_e = train(captioning_model, optimizer, train_dataloader, criterion, lr, epoch, scheduler=None)
             val_loss = evaluate(captioning_model, val_dataloader, masked_loss)
             val_ppl = math.exp(val_loss)
             elapsed = time.time() - epoch_start_time
@@ -238,11 +269,13 @@ def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
 
            #scheduler.step()
         captioning_model.load_state_dict(torch.load(best_model_params_path)) # load best model states
+    # Save the evolution of the loss values
     loss_train = np.array(loss_train) 
     loss_val = np.array(loss_val)
     loss = np.array([loss_train, loss_val])
     with open(loss_save_path, 'wb') as f:
         np.save(f, loss)
+    # Save the weights of the trained captioning model
     torch.save(captioning_model.state_dict(), model_path)
     print("- Captioning model saved as {}".format(model_path))
     print("- Loss evolution saved as {}".format(loss_save_path))
