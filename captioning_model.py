@@ -235,7 +235,7 @@ class CrossAttention(nn.Module):
             print("Initial x_img shape : ", x_img.shape)
 
         # Get the query from the language features and the keys and values from the image features
-        x_img = x_img.repeat(1, seqlen, 1) # Repeat the visual features to match the length of the token sequence
+        x_img = x_img.repeat(1, 1, 1) # Repeat the visual features to match the length of the token sequence
         #print('x_img shape : ', x_img.shape)
         #print('x shape : ', x.shape)
         if verbose:
