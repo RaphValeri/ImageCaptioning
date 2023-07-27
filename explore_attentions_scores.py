@@ -19,17 +19,19 @@ def get_attention_scores(model, test_dset, json_path):
     #tokens = model.llama_tokenizer.encode(cap.lower(), bos=True, eos=True)
 
     cap_pred, tokens = model.generateCap(model.clip_preprocess(img).unsqueeze(0), 0, return_tokens=True)
+
     ca_scores = model.ca_scores.detach().cpu()
+    print('Cross-attention shape : ', ca_scores.shape)
     #ca_scores = einops.reduce(ca_scores,'batch heads sequence img_features -> sequence img_features',
 
     attention_scores = model.att_scores.detach().cpu()
-
+    print('Self-attention shape : ', attention_scores.shape)
     ca_map = {}
     att_map = {}
     for i in range(attention_scores.shape[1]):
         ca_map[i] = ca_scores[0, i, :, :].tolist()
         att_map[i] = attention_scores[0, i, :, :].tolist()
-
+    print('Tokens : ', tokens)
     words = []
     for n in range(len(tokens)):
         if tokens[n]!=model.llama_tokenizer.eos:
@@ -37,10 +39,11 @@ def get_attention_scores(model, test_dset, json_path):
         else:
             break
     res = {'cross_attention':ca_map, 'self_attention':att_map, 'words':words, 'gt_cap':cap}
-
+    print('Words : ', words)
     filename = '{}_{}.json'.format(json_path, idx)
     with open(filename, 'w') as f:
         json.dump(res, f)
+    print('-- JSON file saved')
 
 
 
