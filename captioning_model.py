@@ -179,6 +179,7 @@ class CrossAttention(nn.Module):
 
         self.n_local_heads = args.n_heads
         self.dim = args.dim
+        self.visual_dim = 512
         self.head_dim = args.dim // args.n_heads
         self.max_seq_len = args.max_seq_len
         self.max_batch_size = args.max_batch_size
@@ -192,14 +193,14 @@ class CrossAttention(nn.Module):
             dtype=torch.half,
         )
         self.wk = nn.Linear(
-            args.dim,
+            self.visual_dim,
             args.n_heads * self.head_dim,
             bias=False,
             device=self.device,
             dtype=torch.half,
         )
         self.wv = nn.Linear(
-            args.dim,
+            self.visual_dim,
             args.n_heads * self.head_dim,
             bias=False,
             device=self.device,
@@ -234,7 +235,7 @@ class CrossAttention(nn.Module):
             print("Initial x_img shape : ", x_img.shape)
 
         # Get the query from the language features and the keys and values from the image features
-        x_img = x_img.repeat(1, seqlen, self.dim//x_img.shape[-1]) # Repeat the visual features to match the length of the token sequence
+        x_img = x_img.repeat(1, seqlen, 1) # Repeat the visual features to match the length of the token sequence
         #print('x_img shape : ', x_img.shape)
         #print('x shape : ', x.shape)
         if verbose:
