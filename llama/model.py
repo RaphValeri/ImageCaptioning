@@ -140,8 +140,8 @@ class Attention(nn.Module):
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
-        self.scores_att  = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(self.scores_att, values)  # (bs, n_local_heads, slen, head_dim)
+        scores  = F.softmax(scores.float(), dim=-1).type_as(xq)
+        output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
         output = output.transpose(
             1, 2
         ).contiguous().view(bsz, seqlen, -1)

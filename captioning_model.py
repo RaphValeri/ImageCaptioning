@@ -96,11 +96,11 @@ class CaptioningModel(nn.Module):
                         print("h dtype : ", h.dtype)
                     # Multi-head self-attention
                     h = h + layer.attention.forward(layer.attention_norm(h), start_pos, freqs_cis, mask)
-                    self.att_scores = layer.attention.scores_att
+                    #self.att_scores = layer.attention.scores_att
                     # Cross-Attention
                     h = h + self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].forward(layer.ffn_norm(h), img_features, start_pos, freqs_cis, mask)
                     # Update the last cross-attention and attention scores
-                    self.ca_scores = self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].scores_att
+                    #self.ca_scores = self.ca_layers[i - len(self.llama_model.layers) + self.nb_ca].scores_att
                     # Feed forward
                     h = h + layer.feed_forward.forward(self.ca_norms[i - len(self.llama_model.layers) + self.nb_ca](h).to(dtype=torch.half))
                 else:
@@ -282,10 +282,10 @@ class CrossAttention(nn.Module):
         # if mask is not None:
         #     scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
         # print('scores shape : ', scores.shape)
-        self.scores_att = F.softmax(scores.float(), dim=-1).type_as(xq)
+        scores = F.softmax(scores.float(), dim=-1).type_as(xq)
         # print('After softmax')
         # print('scores shape : ', scores.shape)
-        output = torch.matmul(self.scores_att, values)  # (bs, n_local_heads, slen, head_dim)
+        output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
 
 
         output = output.transpose(
