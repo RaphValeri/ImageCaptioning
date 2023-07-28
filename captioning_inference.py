@@ -47,17 +47,20 @@ def predict_test_data(model, test_dset, filename="evaluation.json", temperature=
     print("End of prediction on test data")
 
 
-def inference(img_path: str, model: CaptioningModel, temp: float) -> str:
+def inference(img_path: str, model: CaptioningModel, temp: float, verbose : bool = True) -> str:
     """
     Single inference of the captioning model for an image
     @param img_path: path of the image
     @param model: captioning model
     @param temp: temperature value to be used during inference
+    @param verbose: boolean to print or not the generated caption
     @return: Generated caption
     """
     img = Image.fromarray(cv2.imread(img_path))
     cap = model.generateCap(model.clip_preprocess(img).unsqueeze(0), temp)
-    print('t={} | {}'.format(temp, cap))
+    if verbose:
+        print('- Inference for image {} -'.format(img_path))
+        print('t={} | {}'.format(temp, cap))
     return cap
 
 
@@ -168,6 +171,14 @@ def main(model_path : str, nb_ca : int, p_test : float, temperature : float, jso
     # Evaluation on test data
     print("PREDICTION ON TEST DATA")
     predict_test_data(captioning_model, test_dset, json_path, temperature=temperature, p_test=p_test)
+    print('PREDICTIONS ON EVERYDAY LIFE PICTURES')
+    img_tests = os.listdir('img')
+    for img_path in img_tests:
+        if len(img_path.split('2023')) != 1:
+            inference(os.path.join('img', img_path), captioning_model, 0.0)
+            inference(os.path.join('img', img_path), captioning_model, 0.1)
+            inference(os.path.join('img', img_path), captioning_model, 0.2)
+            inference(os.path.join('img', img_path), captioning_model, 0.3)
     #investigate_temperature(captioning_model, test_dset, 'eval_temp_effect')
     #get_attention_scores(captioning_model, test_dset, json_path)
     # img_path = './img_test/20230722_183856.jpg'
