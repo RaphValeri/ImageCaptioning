@@ -4,6 +4,14 @@ This repository is an implementation of a captioning model using two pre-trained
 LLaMA language model with 7B parameters.
 In order to download the checkpoints and tokenizer of the LLaMA model, fill this [google form](https://forms.gle/jk851eBVbX1m5TAv5).
 
+
+## Approach
+
+The implemented project follows the framework displayed in the diagram bellow.
+
+![](./img/diagram_captioning_model.png)
+
+
 ## Setup
 
 In a conda env with pytorch / cuda available, run:
