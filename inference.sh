@@ -57,15 +57,21 @@ echo "Executing job commands, current working directory is $(pwd)"
 
 #torchrun --nproc_per_node 1 captioning_inference.py --model_path params_ep1_80.pt --nb_ca 1 --p_test 1.0 --temperature 0.0 --json_path res_files/test_data/1ca_ep1/eval_1ca_ep1_t0.0.json >> $RESULTS_DIR/test.output
 #torchrun --nproc_per_node 1 explore_attentions_scores.py --model_path params_1ca_ep2.pt --nb_ca 1 --p_test 0.1 --temperature 0.0 --json_path res_files/get_att_scores/attention_scores_1ca_2ep.json >> $RESULTS_DIR/test.output
-N=3
-echo "Captioning models with ${N} cross-attention layers" >> $RESULTS_DIR/test.output
-echo "----------------------------------" >> $RESULTS_DIR/test.output
-for EP in 1 2
+#N=3
+#echo "Captioning models with ${N} cross-attention layers" >> $RESULTS_DIR/test.output
+#echo "----------------------------------" >> $RESULTS_DIR/test.output
+#for EP in 1 2
+#  do
+#    echo "Training on ${EP} epochs" >> $RESULTS_DIR/test.output
+#    torchrun --nproc_per_node 1 captioning_training.py --epochs $EP --nb_ca $N --loss_save_path res_files/${N}ca_ep${EP}/loss_${N}ca_ep${EP}.npy --model_path params_${N}ca_ep${EP}.pt  >> $RESULTS_DIR/test.output
+#    for TEMP in 0.0 0.1 0.2
+#      do
+#        torchrun --nproc_per_node 1 captioning_inference.py --model_path params_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/${N}ca_ep${EP}/eval_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
+#      done
+#  done
+N=1
+EP=1
+for TEMP in 0.1 0.2 0.3 0.4 0.6 0.8 1.0
   do
-    echo "Training on ${EP} epochs" >> $RESULTS_DIR/test.output
-    torchrun --nproc_per_node 1 captioning_training.py --epochs $EP --nb_ca $N --loss_save_path res_files/${N}ca_ep${EP}/loss_${N}ca_ep${EP}.npy --model_path params_${N}ca_ep${EP}.pt  >> $RESULTS_DIR/test.output
-    for TEMP in 0.0 0.1 0.2
-      do
-        torchrun --nproc_per_node 1 captioning_inference.py --model_path params_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/${N}ca_ep${EP}/eval_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
-      done
+    torchrun --nproc_per_node 1 captioning_inference.py --model_path params_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/${N}ca_ep${EP}/eval_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
   done
