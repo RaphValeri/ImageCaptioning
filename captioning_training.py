@@ -240,7 +240,7 @@ def main(epochs : int, nb_ca : int, loss_save_path : str, model_path : str):
 
     best_val_loss = float('inf')
     criterion = torch.nn.CrossEntropyLoss()
-    lr = 0.00001
+    lr = 0.0001
     optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, captioning_model.parameters()), lr=lr, weight_decay=0.1, betas=(0.9, 0.95), eps=1e-04)
     print('start')
     loss_train = []
