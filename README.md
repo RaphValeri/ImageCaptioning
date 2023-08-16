@@ -54,23 +54,17 @@ You can do the same with the 'val2014' split for inference purpose (the 'test201
 Finally, edit the path toward your images and annotations in `captioning_training.py` for the training dataset and in 
 `captioning_inference.py` for the testing set.
 ##  Training
+The provided `captioning_training.py` is the script allowing to fine-tune the captioning model on the number of epochs and with the number of added layers specified in the command line, as for example as presented bellow:
 
+```
+torchrun --nproc_per_node 1 captioning_training.py --epochs 5 --nb_ca 2 --loss_save_path res_files/loss_2ca_ep5.npy --model_path params_2ca_ep5.pt
+```
 ## Inference
 
-The provided `example.py` can be run on a single or multi-gpu node with `torchrun` and will output completions for two pre-defined prompts. Using `TARGET_FOLDER` as defined in `download.sh`:
+To generate the captions on the test split of the MSCOCO dataset with a fine-tuned captioning model you can use the `captioning_inference.py` script with specifying the path to the trained model, the path to the JSON output file and the temperature to use for inference. You can also specify a proportion of the testing split if you don't want to use all the images but only 10% for example as bellow:
 ```
-torchrun --nproc_per_node MP example.py --ckpt_dir $TARGET_FOLDER/model_size --tokenizer_path $TARGET_FOLDER/tokenizer.model
+torchrun --nproc_per_node 1 captioning_inference.py --model_path params_2ca_ep5.pt --nb_ca 2 --p_test 0.1 --temperature 0.0 --json_path res_files/eval_2ca_ep5_t0.0.json
 ```
-
-Different models require different MP values:
-
-|  Model | MP |
-|--------|----|
-| 7B     | 1  |
-| 13B    | 2  |
-| 33B    | 4  |
-| 65B    | 8  |
-
 
 
 ## Reference
@@ -90,6 +84,33 @@ LLaMA: Open and Efficient Foundation Language Models -- https://arxiv.org/abs/23
 }
 ```
 
+CLIP : Learning Transferable Visual Models From Natural Language Supervision -- https://arxiv.org/abs/2103.00020
+```
+@article{DBLP:journals/corr/abs-2103-00020,
+  author       = {Alec Radford and
+                  Jong Wook Kim and
+                  Chris Hallacy and
+                  Aditya Ramesh and
+                  Gabriel Goh and
+                  Sandhini Agarwal and
+                  Girish Sastry and
+                  Amanda Askell and
+                  Pamela Mishkin and
+                  Jack Clark and
+                  Gretchen Krueger and
+                  Ilya Sutskever},
+  title        = {Learning Transferable Visual Models From Natural Language Supervision},
+  journal      = {CoRR},
+  volume       = {abs/2103.00020},
+  year         = {2021},
+  url          = {https://arxiv.org/abs/2103.00020},
+  eprinttype    = {arXiv},
+  eprint       = {2103.00020},
+  timestamp    = {Thu, 04 Mar 2021 17:00:40 +0100},
+  biburl       = {https://dblp.org/rec/journals/corr/abs-2103-00020.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+```
 
 ## License
 License of the LLaMA model: see the [LICENSE](LICENSE) file.
