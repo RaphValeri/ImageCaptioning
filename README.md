@@ -1,7 +1,7 @@
 # Image Captioning 
 
-This repository is an implementation of a captioning model using two pre-trained models the CLIP visual encoder and the
-LLaMA language model with 7B parameters.
+This repository is an implementation of a captioning model using two pre-trained models the [CLIP](https://github.com/openai/CLIP) visual encoder and the
+[LLaMA v1](https://github.com/facebookresearch/llama/tree/llama_v1) language model with 7B parameters.
 In order to download the checkpoints and tokenizer of the LLaMA model, fill this [google form](https://forms.gle/jk851eBVbX1m5TAv5).
 
 
