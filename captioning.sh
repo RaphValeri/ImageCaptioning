@@ -51,33 +51,18 @@ echo "Executing job commands, current working directory is $(pwd)"
 # REPLACE THE FOLLOWING WITH YOUR APPLICATION COMMANDS
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 echo "FINE TUNNING HYPERPARAMETERS" >> $RESULTS_DIR/test.output
-echo "3 cross attention layer at last Transformer block" >> $RESULTS_DIR/test.output
-#echo "Added a gate to use or not the cross-attention" >> $RESULTS_DIR/test.output
 echo "Training on 80% of the training data and validation on 20%" >> $RESULTS_DIR/test.output
 echo "Only lower letters in the captions" >> $RESULTS_DIR/test.output
 echo "Batch size of 16" >> $RESULTS_DIR/test.output
 echo "----------------------------------" >> $RESULTS_DIR/test.output
 
-#TEMP=0.0
-#for N in 1 2
-#  do
-#    echo "----------------------------------" >> $RESULTS_DIR/test.output
-#    echo "Captioning models with ${N} cross-attention layers" >> $RESULTS_DIR/test.output
-#    echo "----------------------------------" >> $RESULTS_DIR/test.output
-#    for EP in 3 4
-#      do
-#        echo "Training on ${EP} epochs" >> $RESULTS_DIR/test.output
-#        torchrun --nproc_per_node 1 captioning_training.py --epochs $EP --nb_ca $N --loss_save_path res_files/${N}ca_ep${EP}/loss_${N}ca_ep${EP}.npy --model_path params_${N}ca_ep${EP}.pt  >> $RESULTS_DIR/test.output
-#        torchrun --nproc_per_node 1 captioning_inference.py --model_path params_${N}ca_ep${EP}.pt --nb_ca $N --p_test 0.1 --temperature $TEMP --json_path res_files/${N}ca_ep${EP}/eval_${N}ca_ep${EP}_t${TEMP}.json >> $RESULTS_DIR/test.output
-#      done
-#  done
 
 
 TEMP=0.0
-echo "Captioning models with ${N} cross-attention layers" >> $RESULTS_DIR/test.output
-echo "----------------------------------" >> $RESULTS_DIR/test.output
 for N in 1 2
   do
+    echo "Captioning models with ${N} cross-attention layers" >> $RESULTS_DIR/test.output
+    echo "----------------------------------" >> $RESULTS_DIR/test.output
     for EP in 5 6 7
       do
         echo "Training on ${EP} epochs" >> $RESULTS_DIR/test.output
