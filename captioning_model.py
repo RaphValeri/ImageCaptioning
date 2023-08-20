@@ -1,20 +1,16 @@
 import os
 import json
-from pathlib import Path 
-import cv2
+from pathlib import Path
 
 from typing import Optional, Tuple 
 import math 
 import torch.nn.functional as F
-import fire
+
 import time 
 import clip
 import torch 
 import torch.nn as nn
 
-import torchvision.datasets as dset 
-import torchvision.transforms as transforms
-from PIL import Image
 
 from llama import ModelArgs, Transformer, LLaMA, RMSNorm, apply_rotary_emb
 from llama.tokenizer import Tokenizer
@@ -62,7 +58,7 @@ class CaptioningModel(nn.Module):
         self.ca_scores = None
         self.att_scores = None
 
-    def forward(self, tokens, img, start_pos):
+    def forward(self, tokens, img, start_pos=0):
         """
         Forward pass of the captioning model
         @param tokens: input token sequence
@@ -221,11 +217,7 @@ class CrossAttention(nn.Module):
             dtype=torch.half,
         )
         self.scores_att = None
-        #self.gate = torch.nn.Parameter(torch.zeros(1, self.n_local_heads, 1, 1)).to(device=self.device)
 
-        #print("--"*15)
-        #print("Dim : ", args.dim)
-        #print("n_heads : ", args.n_heads)
 
 
 
@@ -242,9 +234,7 @@ class CrossAttention(nn.Module):
             print("Initial x_img shape : ", x_img.shape)
 
         # Get the query from the language features and the keys and values from the image features
-        x_img = x_img.repeat(1, 1, 1) # Repeat the visual features to match the length of the token sequence
-        #print('x_img shape : ', x_img.shape)
-        #print('x shape : ', x.shape)
+        x_img = x_img.repeat(1, 1, 1)
         if verbose:
             print("Reshape x_img : ", x_img.shape)
             print("--"*15)
@@ -262,32 +252,12 @@ class CrossAttention(nn.Module):
 
         keys = xk
         values = xv
-        # print('Before transpose : ')
-        # print('query shape : ', xq.shape)
-        # print('keys shape : ', xk.shape)
-        # print('values shape : ', xv.shape)
         xq = xq.transpose(1, 2)
         keys = keys.transpose(1, 2)
         values = values.transpose(1, 2)
-        # print('After transpose : ')
-        # print('query shape : ', xq.shape)
-        # print('keys shape : ', keys.shape)
-        # print('values shape : ', values.shape)
-        # print('---'*10)
-        # print('transpose keys : ', keys.transpose(2, 3).shape)
         scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
-        # print('---')
-        # print('before softmax')
-        # print('scores shape : ', scores.shape)
-        # if mask is not None:
-        #     scores = scores + mask  # (bs, n_local_heads, slen, cache_len + slen)
-        # print('scores shape : ', scores.shape)
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        # print('After softmax')
-        # print('scores shape : ', scores.shape)
         output = torch.matmul(scores, values)  # (bs, n_local_heads, slen, head_dim)
-
-
         output = output.transpose(
             1, 2
         ).contiguous().view(bsz, seqlen, -1)
@@ -343,102 +313,7 @@ def setup_model_parallel() -> Tuple[int, int]:
     return local_rank, world_size
 
 
-# def main(
-#     ckpt_dir: str,
-#     tokenizer_path: str,
-#     temperature: float = 0.8,
-#     top_p: float = 0.95,
-#     max_seq_len: int = 512,
-#     max_batch_size: int = 32,
-# ):
-#     # Init setup
-#     local_rank, world_size = setup_model_parallel()
-#     if local_rank > 0:
-#         sys.stdout = open(os.devnull, "w")
-#     max_gen_len=30
-#
-#
-#     # Load dataset
-#     ROOT_train = "/users/rv2018/files/MScProject/data/img/train2014/train2014"
-#     FILE_train = "/users/rv2018/files/MScProject/data/annotations/annotations/captions_train2014.json"
-#
-#     cap_train = dset.CocoCaptions(root=ROOT_train, annFile=FILE_train )
-#
-#     print("--TRAINING DATA--")
-#     print("Number of samples : {}".format(len(cap_train)))
-#     img, target = cap_train[3]
-#     #img = Image.fromarray(cv2.imread("/users/rv2018/files/MScProject/llama/clip/COCO_train2014_000000000034.jpg"))
-#     print("IMAGE : ", img)
-#     verbose = False
-#
-#     # Instantiate the captioning model
-#     print("--INSTANTIATION OF THE CAPTIONING MODEL--")
-#     captioning_model = CaptioningModel(
-#         ckpt_dir, tokenizer_path, local_rank, world_size, max_seq_len, max_batch_size
-#     )
-#     print("--"*15)
-#     print("Trainable parameters : ", sum(p.numel() for p in captioning_model.parameters() if p.requires_grad))
-#     print("Total number of parameters : ", sum(p.numel() for p in captioning_model.parameters()))
-#     print("--"*15)
-#     print("--"*15)
-#     print("EOS Token : ", captioning_model.llama_tokenizer.eos_id)
-#     print("BOS Token : ", captioning_model.llama_tokenizer.bos_id)
-#     print("Pad Token : ", captioning_model.llama_tokenizer.pad_id)
-#     print(" 0 decoded : ", captioning_model.llama_tokenizer.decode([0]))
-#     print("--"*15)
-#
-#
-#     prompts = ["Two men are playing in the garden "]
-#     bsz = len(prompts)
-#     prompt_tokens = [captioning_model.llama_tokenizer.encode(x, bos=True, eos=False) for x in prompts]
-#
-#     min_prompt_size = min([len(t) for t in prompt_tokens])
-#     max_prompt_size = max([len(t) for t in prompt_tokens])
-#
-#     total_len = min(captioning_model.args.max_seq_len, max_gen_len + max_prompt_size)
-#
-#     tokens = torch.full((bsz, total_len), captioning_model.llama_tokenizer.pad_id).cuda().long()
-#     for k, t in enumerate(prompt_tokens):
-#         tokens[k, : len(t)] = torch.tensor(t).long()
-#     input_text_mask = tokens != captioning_model.llama_tokenizer.pad_id
-#     start_pos = min_prompt_size
-#     prev_pos = 0
-#     for cur_pos in range(start_pos, total_len):
-#         logits = captioning_model.forward(tokens[:, prev_pos:cur_pos], img, prev_pos)
-#         logits = logits[:, -1, :]
-#         if verbose :
-#             print("Logit : ", logits)
-#             print("--"*15)
-#             print("Tokenizer world size : ", captioning_model.llama_tokenizer.n_words)
-#             print("--"*15)
-#         if temperature > 0:
-#                 probs = torch.softmax(logits / temperature, dim=-1)
-#                 next_token = sample_top_p(probs, top_p)
-#         else :
-#             next_token = torch.argmax(logits, dim=-1)
-#         next_token = next_token.reshape(-1)
-#         # only replace token if prompt has already been generated
-#         next_token = torch.where(
-#             input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
-#         )
-#         tokens[:, cur_pos] = next_token
-#         prev_pos = cur_pos
-#     decoded = []
-#     if verbose :
-#         print("tokens : ", tokens.tolist())
-#     for i, t in enumerate(tokens.tolist()):
-#         if verbose:
-#             print("i : ", i)
-#             print("t : ", t)
-#         # cut to max gen len
-#         t = t[: len(prompt_tokens[i]) + max_gen_len]
-#         # cut to eos tok if any
-#         try:
-#             t = t[: t.index(captioning_model.llama_tokenizer.eos_id)]
-#         except ValueError:
-#             pass
-#         decoded.append(captioning_model.llama_tokenizer.decode(t))
-#     print("Captioning model prediction : ", decoded)
+
 
 def sample_top_p(probs, p):
     """
